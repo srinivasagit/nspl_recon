@@ -58,7 +58,7 @@ object DBObj {
       def setContract_num(contract_num :Long): Unit = {
 		      this.contract_num = contract_num
       }
-      
+
       def buildProps():Properties = {
        		val properties = new Properties
       		properties.setProperty("driver", mySqlDriver)

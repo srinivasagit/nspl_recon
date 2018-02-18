@@ -5,7 +5,7 @@ import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.{HashMap,HashSet}
-
+import org.apache.spark.sql.Column
 
 class jdbcSparkMySql {
   
@@ -49,12 +49,18 @@ class jdbcSparkMySql {
       val sourceViewColumn : HashSet[ArrayBuffer[String]] = viewColumnNames.getOrElse(sourceViewName, HashSet.empty)
       val targetViewColumn : HashSet[ArrayBuffer[String]] = viewColumnNames.getOrElse(targetViewName, HashSet.empty)
       
-      val selectSourceSQL : String = reconUtilities.getSelSqlWithAliasAndCast(sourceViewColumn)
+//      val selectSourceSQL : String = reconUtilities.getSelSqlWithAliasAndCast(sourceViewColumn)
+//      
+//      val selectTargetSQL : String = reconUtilities.getSelSqlWithAliasAndCast(targetViewColumn)
       
-      val selectTargetSQL : String = reconUtilities.getSelSqlWithAliasAndCast(targetViewColumn)
+      val selectSourceSQL : ArrayBuffer[Column] = reconUtilities.getSelSqlWithAliasAndCast(sourceViewColumn)
+      val selectTargetSQL : ArrayBuffer[Column] = reconUtilities.getSelSqlWithAliasAndCast(targetViewColumn)
       
-      println ("source SQL " + selectSourceSQL)
-      println ("target SQL " + selectTargetSQL)
+      println ("ruleid  : "  + ruleID)
+      println ("SourceViewName : " + sourceViewName + " Id : " + sourceViewID)
+      println ("targetViewName : " + targetViewName + " Id : " + targetViewID)      
+      println ("source SQL :" + selectSourceSQL)
+      println ("target SQL :" + selectTargetSQL)
       
       var sourceViewData : Dataset[Row] = null
       var targetViewData : Dataset[Row] = null
@@ -67,45 +73,49 @@ class jdbcSparkMySql {
       
       sourceViewData = spark.read.jdbc(DBObj.mySqlUrl, sourceViewName.toLowerCase(), DBObj.buildProps())
       
-      sourceViewData.createOrReplaceTempView("sourceViewData_temp")
+//      sourceViewData.createOrReplaceTempView("sourceViewData_temp")
       
-      val sourceViewDataFinal = spark.sql("SELECT " + selectSourceSQL + " FROM sourceViewData_temp")
+      val sourceViewDataFinal = sourceViewData.selectExpr(selectSourceSQL.map(r => r.toString): _*)
       
-      println ("Source record count : "   + sourceViewDataFinal.count())
+//      val sourceViewDataFinal = spark.sql("SELECT " + selectSourceSQL + " FROM sourceViewData_temp")
+      
+      println ("stage-0 : Source record count : "   + sourceViewDataFinal.count())
       
       reconciledSIds = spark.read.jdbc(DBObj.mySqlUrl, table_reconciled.toLowerCase(), DBObj.buildProps())
                                  .where(predicate_s)
                                  .select("original_row_id")
                                  .withColumnRenamed("original_row_id", "scrIds")
       
-      println ("Source record count @ reconciled : "   + reconciledSIds.count())
+      println ("stage-0 : Source record count @ table_reconciled : "   + reconciledSIds.count())
       
       val sourceViewDataFiltered = sourceViewDataFinal.join(reconciledSIds,Seq("scrIds"), "leftanti")     
       
       sourceViewDataFiltered.show()
       
-      println ("Source record count @ reconciled exempted : "   + sourceViewDataFiltered.count())
+      println ("stage-0 : Source record count excluding already reconciled: "   + sourceViewDataFiltered.count())
       
       targetViewData = spark.read.jdbc(DBObj.mySqlUrl, targetViewName.toLowerCase(), DBObj.buildProps())
       
-      targetViewData.createOrReplaceTempView("targetViewData_temp")
+//      targetViewData.createOrReplaceTempView("targetViewData_temp")
       
-      val targetViewDataFinal = spark.sql ( "SELECT " + selectTargetSQL + " FROM targetViewData_temp")
+      val targetViewDataFinal = targetViewData.selectExpr(selectTargetSQL.map(r => r.toString): _*)
       
-      println ("target record count : "   + targetViewData.count())
+//      val targetViewDataFinal = spark.sql ( "SELECT " + selectTargetSQL + " FROM targetViewData_temp")
+      
+      println ("stage-0 : Target record count : "   + targetViewDataFinal.count())
       
       reconciledTIds = spark.read.jdbc(DBObj.mySqlUrl, table_reconciled.toLowerCase(), DBObj.buildProps())
                                  .where(predicate_t)
                                  .select("original_row_id")
                                  .withColumnRenamed("original_row_id", "scrIds")
       
-      println ("target record count @ reconciled : "   + reconciledTIds.count())
+      println ("stage-0 : Target record count @ table_reconciled : "   + reconciledTIds.count())
       
       val targetViewDataFiltered = targetViewDataFinal.join(reconciledTIds,Seq("scrIds"), "leftanti")     
       
       targetViewDataFiltered.show()
       
-      println ("target record count @ reconciled exempted : "   + targetViewDataFiltered.count())      
+      println ("stage-0 : Target record count excluding already reconciled : " + targetViewDataFiltered.count())      
       
       viewWithBaseData.put(sourceViewName, sourceViewDataFiltered)
       viewWithBaseData.put(targetViewName, targetViewDataFiltered)

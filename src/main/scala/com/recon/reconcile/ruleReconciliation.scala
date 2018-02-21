@@ -43,12 +43,21 @@ class ruleReconciliation {
     val format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
     val processTime = format.format(Calendar.getInstance().getTime()) 
     
-    var oneToOne = new OneToOneService () 
+    var oneToOne = new OneToOneService ()
+    var oneToMany = new OneToManyService()
     
     if (ruleDataRecord.ruleType.equals("ONE_TO_ONE")) {
-        println ("Finally we are here")
+        println ("Finally we are here for ONE_TO_ONE")
         reconciledIdsAndStatus = oneToOne.reconcileOneToOne(spark, filteredSourceDataSet, filteredTargetDataSet, ruleDataRecord, jobId, maxReconReference, processTime)
-    }
+    } else if (ruleDataRecord.ruleType.equals("ONE_TO_MANY")) {
+        println ("Finally we are here for ONE_TO_MANY")
+        reconciledIdsAndStatus = oneToMany.reconcileOneToMany(spark, filteredSourceDataSet, filteredTargetDataSet, targetDataForRecon, ruleDataRecord, jobId, maxReconReference, processTime)
+    } 
+//    else if (ruleDataRecord.ruleType.equals("MANY_TO_ONE")) {
+//        println ("Finally we are here for MANY_TO_ONE")
+//        reconciledIdsAndStatus = ManyToOne.reconcileOneToMany(spark, filteredSourceDataSet, filteredTargetDataSet, targetDataForRecon, ruleDataRecord, jobId, maxReconReference, processTime)
+//    }
+//    
     reconciledIdsAndStatus
   }
   

@@ -19,7 +19,9 @@ class OneToOneService {
 		 println("WhereClause is :" + whereClause);
 		 
 		 var reconcileSql: String = "select src.scrIds as original_row_id, tar.scrIds as target_row_id from  srcForRecon as src, tarForRecon as tar "
-          
+     
+		 println ("ONE_TO_ONE query : " + reconcileSql) 
+		 
 		 var reconcileSSQL = "select  original_row_id, " + 
 		     ruleDataRecord.sourceViewId + " as original_view_id, '' as original_view, null as target_row_id, null as target_view_id, '' as target_view, " +
 				 " recon_reference, '' as reconciliation_rule_name, " + 

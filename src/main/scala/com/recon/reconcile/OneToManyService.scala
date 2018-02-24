@@ -35,36 +35,33 @@ class OneToManyService {
      
 //		 try {
 		  
-		   val reconciledSIdJoin : Dataset[Row] = spark.sql(reconcileSql)
+		   val reconciledJoinOneToM : Dataset[Row] = spark.sql(reconcileSql)
 		   
-		   if (! reconciledSIdJoin.take(1).isEmpty) {
+		   if (! reconciledJoinOneToM.take(1).isEmpty) {
 		   		   
-		      val reconciledSIdJoinUnique : Dataset[Row] = reconciledSIdJoin.select("scrIds")
+		      val reconciledSIdJoinInterim : Dataset[Row] = reconciledJoinOneToM.select("scrIds")
 		                                                         .withColumnRenamed("scrIds", "original_row_id")
 		   
-		      val reconciledSIdJoinWithRef = reconciledSIdJoinUnique.withColumn("recon_reference", functions.row_number()
+		      val reconciledSIdJoinWithRef = reconciledSIdJoinInterim.withColumn("recon_reference", functions.row_number()
 									                                                                                 .over(Window.orderBy("original_row_id"))
                                                                                   								 .plus(maxReconReference))
-          val reconciledSIdJoinWithRefFinal = reconciledSIdJoin.join(reconciledSIdJoinWithRef,
-                                                                        reconciledSIdJoin.col("scrIds")
+          val reconciledSIdJoinWithRefFinal = reconciledJoinOneToM.join(reconciledSIdJoinWithRef,
+                                                                        reconciledJoinOneToM.col("scrIds")
                                                                         .equalTo(reconciledSIdJoinWithRef.col("original_row_id")))
                                                                   .withColumnRenamed("scrIds", "original_row_id")
        
-          val colNames: Array[String] = filteredTargetDataSet.schema
-                                                              .fieldNames.filter(c => c != "SUMTOTAL_TEMP")
-//                                                              .map(c => new Column(c))
-          println ("stage-3: Column list other than SUMTOTAL_TEMP" + colNames)
+          val colNames: Array[String] = filteredTargetDataSet.schema.fieldNames.filter(c => c != "SUMTOTAL_TEMP")
+          println ("stage-3: Column list other than SUMTOTAL_TEMP -" + colNames.toSeq)
        
-          val reconciledTIdJoin = filteredTargetDataSet.join(reconciledSIdJoinWithRefFinal,colNames.toSeq, "INNER")
+          val reconciledTIdJoin = targetDataForRecon.join(reconciledSIdJoinWithRefFinal,colNames.toSeq, "INNER")
 			    val reconciledTIdJoinWithRef = reconciledTIdJoin.select("scrIds", "recon_reference")
-					                                             .withColumnRenamed("scrIds", "target_row_id")
+					                                                .withColumnRenamed("scrIds", "target_row_id")
 			    val reconcileSSQL :String = "SELECT null AS id, original_row_id, " +
 							 ruleDataRecord.sourceViewId +
 							 " AS original_view_id, '' AS original_view, null AS target_row_id, null AS target_view_id, '' AS target_view, " +
 							 " recon_reference, '' AS reconciliation_rule_name, " + 
 							 DBObj.ruleGroupId + " AS reconciliation_rule_group_id, " + 
-							 ruleDataRecord.ruleId + " AS reconciliation_rule_id, " + 
-							 DBObj.userId + " AS reconciliation_user_id, '" + 
+							 ruleDataRecord.ruleId + " AS reconciliation_rule_id, '" + DBObj.userId + "' AS reconciliation_user_id, '" + 
 							 jobId + "' AS recon_job_reference, '" + 
 							 processTime + "' AS reconciled_date, " + 
 							 DBObj.tenantId + "  AS tenant_id from srcForRecon_12M"
@@ -73,8 +70,7 @@ class OneToManyService {
 							 ruleDataRecord.targetViewId + " AS target_view_id, " +
 							 " '' AS target_view, recon_reference, '' AS reconciliation_rule_name, " + 
 							 DBObj.ruleGroupId + " AS reconciliation_rule_group_id, " +
-							 ruleDataRecord.ruleId + " AS reconciliation_rule_id, " +
-							 DBObj.userId + " AS reconciliation_user_id, '" +
+							 ruleDataRecord.ruleId + " AS reconciliation_rule_id, '" + DBObj.userId + "' AS reconciliation_user_id, '" +
 							 jobId  			+ "' AS recon_job_reference, '" +
 							 processTime  + "' AS reconciled_date, " +
 							 DBObj.tenantId	+ " AS tenant_id from tarForRecon_12M"       

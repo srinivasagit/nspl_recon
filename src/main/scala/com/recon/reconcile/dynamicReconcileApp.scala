@@ -38,6 +38,7 @@ object dynamicReconcile {
     println("Spark context created..") 
     val spark : SparkSession = new sparkService().getSparkSession()
     spark.sparkContext.setLogLevel("WARN")
+    spark.sqlContext.setConf("spark.sql.shuffle.partitions", "25")
     val jobId = spark.sparkContext.applicationId
     println ("NSPL_Recon application ID " + jobId )
     

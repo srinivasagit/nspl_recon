@@ -98,9 +98,9 @@ class OneToOneService {
 			    reconciledT  = spark.sql(reconciledTSql)
 		
 			    reconciledWithId = reconciledS.union(reconciledT)
-			                                  .withColumn("id",functions.row_number().over(Window.orderBy("original_row_id")))
-          
+			                                  .withColumn("id",functions.row_number().over(Window.orderBy("original_row_id")).plus(ReconReference))          
 			    reconIdsAndStatusArray.append(reconciledWithId)
+			    reconciledWithId.show()
       }
 		  
       reconIdsAndStatusArray

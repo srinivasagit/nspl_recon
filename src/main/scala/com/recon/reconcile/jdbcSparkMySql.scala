@@ -6,32 +6,72 @@ import org.apache.spark.sql.Row
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.{HashMap,HashSet}
 import org.apache.spark.sql.Column
+import com.mysql.jdbc.Connection
+import org.apache.spark.util.SizeEstimator
 
 class jdbcSparkMySql {
   
   
-  def fetchTenantId(spark: SparkSession) : Unit = {
-		try {	
-  			val driver = "com.mysql.jdbc.Driver"
-  			val username = DBObj.dbUser
-  			val password = DBObj.dbPass
-  			
-  			println("Mysql connection : %s".format(DBObj.mySqlUrl))
-  			println("Mysql username : " + DBObj.dbUser)
-  			println("Mysql password : " + DBObj.dbPass )
-  					
-  			val table = "t_rule_group_details"
-        val predicate = "rule_group_id = " + DBObj.ruleGroupId
-        
-        DBObj.tenantId = spark.read.jdbc(DBObj.mySqlUrl, table, DBObj.buildProps())
-                                   .where(predicate)
-                                   .select("tenant_id")
-                                   .collectAsList().get(0).getLong(0)
-			} catch {
-			      case e: Exception => e.printStackTrace()
-			}
-  }
+//  def fetchTenantId(spark: SparkSession) : Unit = {
+//		try {	
+//  			val driver = "com.mysql.jdbc.Driver"
+//  			val username = DBObj.dbUser
+//  			val password = DBObj.dbPass
+//  			
+//  			println("Mysql connection : %s".format(DBObj.mySqlUrl))
+//  			println("Mysql username : " + DBObj.dbUser)
+//  			println("Mysql password : " + DBObj.dbPass )
+//  					
+//  			val table = "t_rule_group_details"
+//        val predicate = "rule_group_id = " + DBObj.ruleGroupId
+//        
+//        DBObj.tenantId = spark.read.jdbc(DBObj.mySqlUrl, table, DBObj.buildProps())
+//                                   .where(predicate)
+//                                   .select("tenant_id")
+//                                   .collectAsList().get(0).getLong(0)
+//			} catch {
+//			      case e: Exception => e.printStackTrace()
+//			}
+//  }
   
+  	def getMaxReconRef (spark : SparkSession) : Option[Long] = {
+	   
+	   try {
+	         val queryFetchMaxReconRef = "(SELECT max(CONVERT(recon_reference,UNSIGNED INTEGER)) as recon_reference FROM " +  DBObj.dbName + ".t_reconciliation_result) as k"
+	  	     println ("Recon Ref Query:" + queryFetchMaxReconRef)
+	  	     
+//	  	     spark.read.jdbc(DBObj.mySqlUrl, sourceViewName.toLowerCase(), DBObj.buildProps()).
+	  	     var maxRefRecon : Long = 0L
+	  	     maxRefRecon = spark.read.jdbc(DBObj.mySqlUrl, queryFetchMaxReconRef, DBObj.buildProps())
+	  	                             .collectAsList().get(0).getDecimal(0).longValue()
+	  	                             
+//	         val statement = connection.createStatement
+//		       val rs = statement.executeQuery(queryFetchMaxReconRef)
+//						while (rs.next) {
+//						     if (rs.getString("recon_reference") != null) {
+//						         maxRefRecon = rs.getString("recon_reference").toLong
+//						     }
+//						}
+//			      rs.close()
+//	          println ("Max RefCon : " + maxRefRecon) 
+	          Some(maxRefRecon)
+	    } catch {
+		      case e: Exception => { e.printStackTrace(); None}
+  		}
+	}
+  
+  def writeToDatabase (spark : SparkSession, resultToDB: Dataset[Row]) : Unit = {
+
+    try {
+        val table_reconciled : String = "t_reconciliation_result"
+//        println ("JDBC properties :" + DBObj.buildProps() + " url :" + DBObj.mySqlUrl)
+        resultToDB.write.mode("APPEND").jdbc(DBObj.mySqlUrl, table_reconciled, DBObj.buildProps())
+    
+        } catch {
+		      case e: Exception => { e.printStackTrace(); None}
+    }
+  }
+  	
   def fetchViewAndBaseData (spark : SparkSession, 
                             ruleDataRecord :ruleDataViewRecord,  
                             viewColumnNames : HashMap[String, HashSet[ArrayBuffer[String]]]) : 
@@ -68,54 +108,70 @@ class jdbcSparkMySql {
       var reconciledTIds : Dataset[Row] = null
       
       val table_reconciled : String = "t_reconciliation_result"
-      val predicate_s :String  = " original_view_id = " + sourceViewID
-      val predicate_t :String  = " original_view_id = " + targetViewID
+      val predicate_s :String  = " t.original_view_id = " + sourceViewID
+      val predicate_t :String  = " t.target_view_id = " + targetViewID
       
-      sourceViewData = spark.read.jdbc(DBObj.mySqlUrl, sourceViewName.toLowerCase(), DBObj.buildProps())
+      val srcPushDownQuery = "( SELECT  s.* FROM " + sourceViewName.toLowerCase() + " AS s " +
+                                " WHERE s.scrIds NOT in (SELECT t.original_row_id as scrIds From t_reconciliation_result t WHERE " + 
+                                predicate_s + " ) ) srcRecFilter"
+                                
+      val tarPushDownQuery = "( SELECT tar.* FROM " + targetViewName.toLowerCase() + " AS tar " +  
+                                " WHERE tar.scrIds NOT in (SELECT t.target_row_id as scrIds From t_reconciliation_result t WHERE " + 
+                                predicate_t + " ) ) tarRecFilter"
+                                
+      println( "Source pushdown query :")
+      println (srcPushDownQuery)
+
+      println( "Target pushdown query :")
+      println (tarPushDownQuery)
       
-//      sourceViewData.createOrReplaceTempView("sourceViewData_temp")
+      val sourceViewDataFiltered =  spark.read.jdbc(DBObj.mySqlUrl, srcPushDownQuery , DBObj.buildProps())
+                                              .selectExpr(selectSourceSQL.map(r => r.toString): _*)
+//                                              .repartition(2)
       
-      val sourceViewDataFinal = sourceViewData.selectExpr(selectSourceSQL.map(r => r.toString): _*)
-      
-//      val sourceViewDataFinal = spark.sql("SELECT " + selectSourceSQL + " FROM sourceViewData_temp")
-      
-      println ("stage-0 : Source record count : "   + sourceViewDataFinal.count())
-      
-      reconciledSIds = spark.read.jdbc(DBObj.mySqlUrl, table_reconciled.toLowerCase(), DBObj.buildProps())
-                                 .where(predicate_s)
-                                 .select("original_row_id")
-                                 .withColumnRenamed("original_row_id", "scrIds")
-      
-      println ("stage-0 : Source record count @ table_reconciled : "   + reconciledSIds.count())
-      
-      val sourceViewDataFiltered = sourceViewDataFinal.join(reconciledSIds,Seq("scrIds"), "leftanti")     
-      
+//      sourceViewData = spark.read.jdbc(DBObj.mySqlUrl, sourceViewName.toLowerCase(), DBObj.buildProps())
+//      
+//      val sourceViewDataFinal = sourceViewData.selectExpr(selectSourceSQL.map(r => r.toString): _*)
+//      
+//      println ("stage-0 : Source record count : "   + sourceViewDataFinal.count())
+//      
+//      reconciledSIds = spark.read.jdbc(DBObj.mySqlUrl, table_reconciled.toLowerCase(), DBObj.buildProps())
+//                                 .where(predicate_s)
+//                                 .select("original_row_id")
+//                                 .withColumnRenamed("original_row_id", "scrIds")
+//      
+//      println ("stage-0 : Source record count @ table_reconciled : "   + reconciledSIds.count())
+//      
+//      val sourceViewDataFiltered = sourceViewDataFinal.join(reconciledSIds,Seq("scrIds"), "leftanti")     
+//    
+      println ("stage-0 : Source record count to be reconciled : "   + sourceViewDataFiltered.count() +
+               " - Partition count : " + sourceViewDataFiltered.rdd.partitions.size ) 
+//               " - data size : " + SizeEstimator.estimate(sourceViewDataFiltered))
       sourceViewDataFiltered.show()
       
-      println ("stage-0 : Source record count excluding already reconciled: "   + sourceViewDataFiltered.count())
+      val targetViewDataFiltered =  spark.read.jdbc(DBObj.mySqlUrl, tarPushDownQuery , DBObj.buildProps())
+                                              .selectExpr(selectTargetSQL.map(r => r.toString): _*)
+//                                              .repartition(2)
+                                              
+//      targetViewData = spark.read.jdbc(DBObj.mySqlUrl, targetViewName.toLowerCase(), DBObj.buildProps())
+//      
+//      val targetViewDataFinal = targetViewData.selectExpr(selectTargetSQL.map(r => r.toString): _*)
+//      
+//      println ("stage-0 : Target record count : "   + targetViewDataFinal.count())
+//      
+//      reconciledTIds = spark.read.jdbc(DBObj.mySqlUrl, table_reconciled.toLowerCase(), DBObj.buildProps())
+//                                 .where(predicate_t)
+//                                 .select("target_row_id")
+//                                 .withColumnRenamed("target_row_id", "scrIds")
+//      
+//      println ("stage-0 : Target record count @ table_reconciled : "   + reconciledTIds.count())
+//      
+//      val targetViewDataFiltered = targetViewDataFinal.join(reconciledTIds,Seq("scrIds"), "leftanti")     
       
-      targetViewData = spark.read.jdbc(DBObj.mySqlUrl, targetViewName.toLowerCase(), DBObj.buildProps())
-      
-//      targetViewData.createOrReplaceTempView("targetViewData_temp")
-      
-      val targetViewDataFinal = targetViewData.selectExpr(selectTargetSQL.map(r => r.toString): _*)
-      
-//      val targetViewDataFinal = spark.sql ( "SELECT " + selectTargetSQL + " FROM targetViewData_temp")
-      
-      println ("stage-0 : Target record count : "   + targetViewDataFinal.count())
-      
-      reconciledTIds = spark.read.jdbc(DBObj.mySqlUrl, table_reconciled.toLowerCase(), DBObj.buildProps())
-                                 .where(predicate_t)
-                                 .select("original_row_id")
-                                 .withColumnRenamed("original_row_id", "scrIds")
-      
-      println ("stage-0 : Target record count @ table_reconciled : "   + reconciledTIds.count())
-      
-      val targetViewDataFiltered = targetViewDataFinal.join(reconciledTIds,Seq("scrIds"), "leftanti")     
-      
+      println ("stage-0 : Target record count to be reconciled : " + targetViewDataFiltered.count() +
+               " - Partition count : " + targetViewDataFiltered.rdd.partitions.size ) 
+//               " - data size : " + SizeEstimator.estimate(sourceViewDataFiltered))      
       targetViewDataFiltered.show()
-      
-      println ("stage-0 : Target record count excluding already reconciled : " + targetViewDataFiltered.count())      
       
       viewWithBaseData.put(sourceViewName, sourceViewDataFiltered)
       viewWithBaseData.put(targetViewName, targetViewDataFiltered)

@@ -37,7 +37,10 @@ class OneToManyService {
 		  
 		   val reconciledJoinOneToM : Dataset[Row] = spark.sql(reconcileSql)
 		   
-		   if (! reconciledJoinOneToM.take(1).isEmpty) {
+		   println ("OneToMany - Join dataset")
+		   reconciledJoinOneToM.show()
+		   
+		   if (! reconciledJoinOneToM.head(1).isEmpty) {
 		   		   
 		      val reconciledSIdJoinInterim : Dataset[Row] = reconciledJoinOneToM.select("scrIds")
 		                                                         .withColumnRenamed("scrIds", "original_row_id")
@@ -51,12 +54,14 @@ class OneToManyService {
                                                                   .withColumnRenamed("scrIds", "original_row_id")
        
           val colNames: Array[String] = filteredTargetDataSet.schema.fieldNames.filter(c => c != "SUMTOTAL_TEMP")
+       
           println ("stage-3: Column list other than SUMTOTAL_TEMP -" + colNames.toSeq)
        
           val reconciledTIdJoin = targetDataForRecon.join(reconciledSIdJoinWithRefFinal,colNames.toSeq, "INNER")
 			    val reconciledTIdJoinWithRef = reconciledTIdJoin.select("scrIds", "recon_reference")
 					                                                .withColumnRenamed("scrIds", "target_row_id")
-			    val reconcileSSQL :String = "SELECT null AS id, original_row_id, " +
+			    //val reconcileSSQL :String = "SELECT null AS id, original_row_id, " +
+			    val reconcileSSQL :String = "SELECT original_row_id, " +
 							 ruleDataRecord.sourceViewId +
 							 " AS original_view_id, '' AS original_view, null AS target_row_id, null AS target_view_id, '' AS target_view, " +
 							 " recon_reference, '' AS reconciliation_rule_name, " + 
@@ -66,7 +71,8 @@ class OneToManyService {
 							 processTime + "' AS reconciled_date, " + 
 							 DBObj.tenantId + "  AS tenant_id from srcForRecon_12M"
 	
-			    val reconcileTSQL :String = "SELECT null AS id, null AS original_row_id, null AS original_view_id, '' AS original_view, target_row_id, " +
+			    //val reconcileTSQL :String = "SELECT null AS id, null AS original_row_id, null AS original_view_id, '' AS original_view, target_row_id, " +
+			    val reconcileTSQL :String = "SELECT null AS original_row_id, null AS original_view_id, '' AS original_view, target_row_id, " +
 							 ruleDataRecord.targetViewId + " AS target_view_id, " +
 							 " '' AS target_view, recon_reference, '' AS reconciliation_rule_name, " + 
 							 DBObj.ruleGroupId + " AS reconciliation_rule_group_id, " +
@@ -80,17 +86,26 @@ class OneToManyService {
 	
 	  	  	val reconciledSRef : Dataset[Row] = spark.sql(reconcileSSQL)
 		  	  val reconciledTRef : Dataset[Row] = spark.sql(reconcileTSQL)
-          val reCount_12M = reconciledSIdJoinWithRef.count() 
-			      
-          println ("****************************************************************")
-   	  	  println ("OneToMany - Reconciled count : " + reCount_12M )
-   	  	  println ("****************************************************************")
+		  	  
+//          println("OneToMany - Join Dataset")
+//          reconciledSIdJoinWithRef.show()
+          
+//		  	  val reCount_12M = reconciledSIdJoinWithRef.count() 
+//			      
+//          println ("****************************************************************")
+//   	  	  println ("OneToMany - Reconciled count : " + reCount_12M )
+//   	  	  println ("****************************************************************")
        		
    	  	  if ( ! reconciledSIdJoinWithRef.take(1).isEmpty) {
-   	  	   val reconIdsAndStatus = reconciledSRef.union(reconciledTRef)
-   	  	   
-   	  	   reconIdsAndStatus.show()
-   	  	   
+   	  	    
+			       println ("OneToMany - Source data reconciled count : " + reconciledSRef.count() + 
+			                         " - Target data reconciled count : " + reconciledTRef.count())   	  	    
+   	  	    
+    	  	   val reconIdsAndStatusResult = reconciledSRef.union(reconciledTRef)
+    	  	                                               //.withColumn("id",functions.row_number().over(Window.orderBy("original_row_id")).plus(maxReconReference))
+        	   println ("OneToMany - reconcile dataset")
+    	  	   reconIdsAndStatusResult.show()
+   	  	     reconIdsAndStatus.append(reconIdsAndStatusResult)   	  	    
    	  	  }
 					                                             
 		   }

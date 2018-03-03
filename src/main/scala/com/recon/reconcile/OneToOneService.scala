@@ -16,7 +16,7 @@ class OneToOneService {
      var reconIdsAndStatus = new ArrayBuffer[Dataset[Row]] ()
      val ReconcileUtils = new reconUtils()
      var whereClause: String = ReconcileUtils.getWhereClauseFor(ruleDataRecord);     
-		 println("WhereClause is :" + whereClause);
+		 println("WhereClause is : " + whereClause);
 		 
 		 var reconcileSql: String = "select src.scrIds as original_row_id, tar.scrIds as target_row_id from  srcForRecon as src, tarForRecon as tar "
      
@@ -84,25 +84,28 @@ class OneToOneService {
       var reconciledWithId : Dataset[Row] = null
       var recCount: Long = reconciled.count()
       
-      println ("****************************************************************")
-   		println ("OneToOne - Reconciled count : " + recCount )
-   		println ("****************************************************************")
+//      println ("****************************************************************")
+//   		println ("OneToOne - Reconciled count : " + recCount )
+//   		println ("****************************************************************")
       
+      println ("OneToOne - Join dataset")
    		reconciled.show()
-      reconciled.explain()
-      reconciled.queryExecution
+//      reconciled.explain()
+//      reconciled.queryExecution
       
       if (! reconciled.head(1).isEmpty) {
         
 			    reconciledS  = spark.sql(reconciledSSql)
 			    reconciledT  = spark.sql(reconciledTSql)
-		
+			    println ("OneToOne - Source data reconciled count : " + reconciledS.count() + 
+			                     " - Target data reconciled count : " + reconciledT.count())
+			    
 			    reconciledWithId = reconciledS.union(reconciledT)
-			                                  .withColumn("id",functions.row_number().over(Window.orderBy("original_row_id")).plus(ReconReference))          
+//			                                  .withColumn("id",functions.row_number().over(Window.orderBy("original_row_id")).plus(ReconReference))          
 			    reconIdsAndStatusArray.append(reconciledWithId)
+			    println ("OneToOne - reconcile dataset")
 			    reconciledWithId.show()
       }
-		  
       reconIdsAndStatusArray
     }
   

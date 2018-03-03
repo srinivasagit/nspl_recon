@@ -33,10 +33,12 @@ class ManyToManyService {
  		  println ("stage-5: <MANY_TO_MANY> recocile query: " +  reconcileSql)		 
 		 
 		  val reconcileResult = new ArrayBuffer[Dataset[Row]]()
-		  
-		  val reconciledManyToM : Dataset[Row] = spark.sql(reconcileSql) 		  
+		  val reconciledManyToM : Dataset[Row] = spark.sql(reconcileSql)
 
-	    if (! reconciledManyToM.take(1).isEmpty) {
+		  println ("ManyToMany - Join dataset")
+		  reconciledManyToM.show()
+
+	    if (! reconciledManyToM.head(1).isEmpty) {
 	      
 	      	val reconciledIdJoinWithRef = reconciledManyToM.withColumn("recon_reference", functions.row_number()
 									                                                                               .over(Window.orderBy("tarRef"))
@@ -52,7 +54,8 @@ class ManyToManyService {
 			    val reconciledTIdJoinWithRef : Dataset[Row] = reconciledTIdJoin.select("scrIds", "recon_reference")
 					                                                               .withColumnRenamed("scrIds", "target_row_id")
 					                                                               
-			    val reconcileSSQL :String = "SELECT null AS id, original_row_id, " +
+//			    val reconcileSSQL :String = "SELECT null AS id, original_row_id, " +
+          val reconcileSSQL :String = "SELECT original_row_id, " +					                                                               
 							 ruleDataRecord.sourceViewId +
 							 " AS original_view_id, '' AS original_view, null AS target_row_id, null AS target_view_id, '' AS target_view, " +
 							 " recon_reference, '' AS reconciliation_rule_name, " + 
@@ -62,7 +65,8 @@ class ManyToManyService {
 							 processTime + "' AS reconciled_date, " + 
 							 DBObj.tenantId + "  AS tenant_id from srcForRecon_M2M"
 	
-			    val reconcileTSQL :String = "SELECT null AS id, null AS original_row_id, null AS original_view_id, '' AS original_view, target_row_id, " +
+//			    val reconcileTSQL :String = "SELECT null AS id, null AS original_row_id, null AS original_view_id, '' AS original_view, target_row_id, " +
+          val reconcileTSQL :String = "SELECT null AS original_row_id, null AS original_view_id, '' AS original_view, target_row_id, " +							 
 							 ruleDataRecord.targetViewId + " AS target_view_id, " +
 							 " '' AS target_view, recon_reference, '' AS reconciliation_rule_name, " + 
 							 DBObj.ruleGroupId + " AS reconciliation_rule_group_id, " +
@@ -71,22 +75,27 @@ class ManyToManyService {
 							 processTime  + "' AS reconciled_date, " +
 							 DBObj.tenantId	+ " AS tenant_id from tarForRecon_M2M"
 							 
-			    reconciledSIdJoinWithRef.createOrReplaceTempView("srcForRecon_M2M");
-  			  reconciledTIdJoinWithRef.createOrReplaceTempView("tarForRecon_M2M");
-  			  
-	  	  	val reconciledSRef : Dataset[Row] = spark.sql(reconcileSSQL)
+			    reconciledSIdJoinWithRef.createOrReplaceTempView("srcForRecon_M2M")
+  			  reconciledTIdJoinWithRef.createOrReplaceTempView("tarForRecon_M2M")
+
+  			  val reconciledSRef : Dataset[Row] = spark.sql(reconcileSSQL)
 		  	  val reconciledTRef : Dataset[Row] = spark.sql(reconcileTSQL)
-          val reCount_M2M = reconciledManyToM.count()  							 
+//          val reCount_M2M = reconciledManyToM.count()  							 
 			      
-          println ("****************************************************************")
-   	  	  println ("ManyToMany - Reconciled count : " + reCount_M2M )
-   	  	  println ("****************************************************************")   
+//          println ("****************************************************************")
+//   	  	  println ("ManyToMany - Reconciled count : " + reCount_M2M )
+//   	  	  println ("****************************************************************")   
 
    	  	  if ( ! reconciledIdJoinWithRef.take(1).isEmpty) {
-   	  	   val reconIdsAndStatus = reconciledSRef.union(reconciledTRef)
-   	  	   
-   	  	   reconIdsAndStatus.show()
-   	  	   
+   	  	    
+			      println ("ManyToMany  - Source data reconciled count : " + reconciledSRef.count() + 
+			                          " - Target data reconciled count : " + reconciledTRef.count())   
+			                         
+    	  	   val reconIdsAndStatusResult = reconciledSRef.union(reconciledTRef)
+    	  	   println ("ManyToMany - reconcile dataset")
+        	   reconIdsAndStatusResult.show()
+        	   
+   	  	     reconIdsAndStatus.append(reconIdsAndStatusResult)
    	  	  }  
           
 	    }

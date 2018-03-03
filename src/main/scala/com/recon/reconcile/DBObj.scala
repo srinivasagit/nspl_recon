@@ -4,38 +4,54 @@ import java.util.Properties
 import com.mysql.jdbc.Driver
 
 object DBObj {
-	    var dbHost: String = null
-			var dbName: String = null
-			var dbUser: String = null
-			var dbPass: String = null
-			var ruleGroupId: Int = _
-			var ruleId: Int = _
-			var accRuleGroupId: Int = _
-			var accAppRuleId: Int = _
-			var ruleType : String = null
-			var userId: String = null
-			var oozieJobId : Long = _
-			var tenantId: Long = _
-			var contract_num : Long = _
+	   private var _dbHost: String = null
+		 private var _dbName: String = null
+		 private var _dbUser: String = null
+		 private var _dbPass: String = null
+		 private var _ruleGroupId: Int = _
+		 private var _ruleId: Int = _
+		 private var _accRuleGroupId: Int = _
+		 private var _accAppRuleId: Int = _
+		 private var _ruleType : String = null
+		 private var _userId: String = null
+	   private var _oozieJobId : Long = _
+		 private var _tenantId: Long = _
+		 private var _contract_num : Long = _
 //			println ("contract Initiavalue : " + contract_num)
-			var mySqlUrl : String = null
-			val mySqlDriver = "com.mysql.jdbc.Driver"
-			var properties : Properties = _
-			val module: String = "RECON"
+		 private var _mySqlUrl : String = null
+		 private val _mySqlDriver = "com.mysql.jdbc.Driver"
+		 private var properties : Properties = _
+		 private val _module: String = "RECON"
 
-			def utils(arguments : Array [String]):Unit = {
-					this.dbHost = arguments(0) 
-					this.dbName  = arguments(1)
-					this.dbUser = arguments(2)
-					this.dbPass = arguments(3)
-					this.ruleGroupId = arguments(4).toInt
-					this.ruleId = arguments(5).toInt
-					this.accRuleGroupId = arguments(6).toInt
-					this.accAppRuleId = arguments(7).toInt
-					this.ruleType = arguments(8)
-					this.userId = arguments(9)
-					this.oozieJobId = arguments(10).toLong
-					this.mySqlUrl= "jdbc:mysql://" + this.dbHost + '/' + this.dbName
+		 def dbHost = _dbHost
+		 def dbName = _dbName
+		 def dbUser = _dbUser
+		 def dbPass = _dbPass
+		 def ruleGroupId =_ruleGroupId
+		 def ruleId = _ruleId
+		 def accRuleGroupId = _accRuleGroupId
+		 def accAppRuleId = _accAppRuleId
+		 def ruleType = _ruleType
+		 def userId = _userId
+		 def oozieJobId = _oozieJobId
+		 def mySqlUrl = _mySqlUrl
+		 def mySqlDriver = _mySqlDriver
+		 def module = _module
+		 
+		 def utils(arguments : Array [String]):Unit = {
+	     
+					this._dbHost = arguments(0) 
+					this._dbName  = arguments(1)
+					this._dbUser = arguments(2)
+					this._dbPass = arguments(3)
+					this._ruleGroupId = arguments(4).toInt
+					this._ruleId = arguments(5).toInt
+					this._accRuleGroupId = arguments(6).toInt
+					this._accAppRuleId = arguments(7).toInt
+					this._ruleType = arguments(8)
+					this._userId = arguments(9)
+					this._oozieJobId = arguments(10).toLong
+					this._mySqlUrl= "jdbc:mysql://" + this.dbHost + '/' + this.dbName
 					
 					println ("Host     			: %s".format(dbHost))
 					println ("Database 			: %s".format(dbName))
@@ -52,12 +68,16 @@ object DBObj {
       }
 	    
       def setTenantId(tenant :Long): Unit = {
-		      this.tenantId = tenant
+		      this._tenantId = tenant
       }
       
+      def tenantId = _tenantId
+      
       def setContract_num(contract_num :Long): Unit = {
-		      this.contract_num = contract_num
+		      this._contract_num = contract_num
       }
+      
+      def contract_num = _contract_num
 
       def buildProps():Properties = {
        		val properties = new Properties

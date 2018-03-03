@@ -33,8 +33,12 @@ class ManyToOneService {
 		  val reconcileResult = new ArrayBuffer[Dataset[Row]]()
 		  
 		  val reconciledManyToO : Dataset[Row] = spark.sql(reconcileSql)
+		  
+		  println ("ManyToOne - Join dataset")
+		  
+		  reconciledManyToO.show()
 		   
-		  if (! reconciledManyToO.take(1).isEmpty) {	
+		  if (! reconciledManyToO.head(1).isEmpty) {	
 		      val reconciledManyToOInterim : Dataset[Row] = reconciledManyToO.select("scrIds")
 		                                                         .withColumnRenamed("scrIds", "target_row_id")
 
@@ -54,7 +58,7 @@ class ManyToOneService {
 			    val reconciledSIdJoinWithRef = reconciledSIdJoin.select("scrIds", "recon_reference")
 					                                                .withColumnRenamed("scrIds", "original_row_id")          
 
-			    val reconcileSSQL :String = "SELECT null AS id, original_row_id, " +
+			    val reconcileSSQL :String = "SELECT original_row_id, " +
 							 ruleDataRecord.sourceViewId +
 							 " AS original_view_id, '' AS original_view, null AS target_row_id, null AS target_view_id, '' AS target_view, " +
 							 " recon_reference, '' AS reconciliation_rule_name, " + 
@@ -64,7 +68,7 @@ class ManyToOneService {
 							 processTime + "' AS reconciled_date, " + 
 							 DBObj.tenantId + "  AS tenant_id from srcForRecon_M21"
 	
-			    val reconcileTSQL :String = "SELECT null AS id, null AS original_row_id, null AS original_view_id, '' AS original_view, target_row_id, " +
+			    val reconcileTSQL :String = "SELECT null AS original_row_id, null AS original_view_id, '' AS original_view, target_row_id, " +
 							 ruleDataRecord.targetViewId + " AS target_view_id, " +
 							 " '' AS target_view, recon_reference, '' AS reconciliation_rule_name, " + 
 							 DBObj.ruleGroupId + " AS reconciliation_rule_group_id, " +
@@ -78,17 +82,24 @@ class ManyToOneService {
   			  
 	  	  	val reconciledSRef : Dataset[Row] = spark.sql(reconcileSSQL)
 		  	  val reconciledTRef : Dataset[Row] = spark.sql(reconcileTSQL)
-          val reCount_M21 = reconciledTIdJoinWithRef.count()  
-			      
-          println ("****************************************************************")
-   	  	  println ("ManyToOne - Reconciled count : " + reCount_M21 )
-   	  	  println ("****************************************************************")   
+//		  	  println("ManyToOne - Join Dataset")
+//		  	  reconciledTIdJoinWithRef.show()
+//          val reCount_M21 = reconciledTIdJoinWithRef.count()  
+//			      
+//          println ("****************************************************************")
+//   	  	  println ("ManyToOne - Reconciled count : " + reCount_M21 )
+//   	  	  println ("****************************************************************")   
 
    	  	  if ( ! reconciledTIdJoinWithRef.take(1).isEmpty) {
-   	  	   val reconIdsAndStatus = reconciledSRef.union(reconciledTRef)
-   	  	   
-   	  	   reconIdsAndStatus.show()
-   	  	   
+   	  	    
+			      println ("ManyToOne  - Source data reconciled count : " + reconciledSRef.count() + 
+			                         " - Target data reconciled count : " + reconciledTRef.count())   	  	    
+   	  	       	  	    
+   	  	    val reconIdsAndStatusResult = reconciledSRef.union(reconciledTRef)
+   	  	                                                //.withColumn("id",functions.row_number().over(Window.orderBy("target_row_id")).plus(maxReconReference))
+   	  	   	println ("ManyToOne - reconcile dataset")
+   	  	    reconIdsAndStatusResult.show()
+   	  	    reconIdsAndStatus.append(reconIdsAndStatusResult)
    	  	  }   	  	  
 					                                                
 		  }

@@ -30,33 +30,13 @@ class jdbcScalaMysql {
 						while (rs.next) {
 						     DBObj.setTenantId(rs.getLong("tenant_id"))
 						}
+			      statement.close()
 			      rs.close()
 			} catch {
 			      case e: Exception => e.printStackTrace()
 			} 
 	}
 	
-	def getMaxReconRef (connection : Connection) : Option[Long] = {
-	   
-	   try {
-	         val queryFetchMaxReconRef = "SELECT max(CONVERT(recon_reference,UNSIGNED INTEGER)) as recon_reference FROM " +  DBObj.dbName + ".t_reconciliation_result"
-	  	     println ("Recon Ref Query:" + queryFetchMaxReconRef)
-	         val statement = connection.createStatement
-		       val rs = statement.executeQuery(queryFetchMaxReconRef)
-		       var maxRefRecon : Long = 0L
-		     
-						while (rs.next) {
-						     if (rs.getString("recon_reference") != null) {
-						         maxRefRecon = rs.getString("recon_reference").toLong
-						     }
-						}
-			      rs.close()
-	          println ("Max RefCon : " + maxRefRecon) 
-	          Some(maxRefRecon)
-	    } catch {
-		      case e: Exception => { e.printStackTrace(); None}
-  		}
-	}
 	
 	def checkTenantStatus(connection: Connection): Option[Boolean] = {
 			try {	
@@ -73,6 +53,7 @@ class jdbcScalaMysql {
 						     DBObj.setContract_num (rs.getLong("contract_num"))
 						     print ("Tenant contract id: " + DBObj.contract_num )
 						}
+			      statement.close()
 			      rs.close()
 			      if ( DBObj.contract_num != 0L ){
 			        Some (result)
@@ -101,6 +82,7 @@ class jdbcScalaMysql {
 	       rowCount+= 1
 		     println ("Group Id : " + rs.getLong("id"))
 		}
+	  stmt.close()
 	  rs.close()
 	  println ("no of records : " + rowCount)
 	  if (rowCount != 1 ) {

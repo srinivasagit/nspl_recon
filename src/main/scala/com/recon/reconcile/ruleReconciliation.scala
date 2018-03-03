@@ -6,11 +6,13 @@ import scala.collection.mutable.{ArrayBuffer,HashMap}
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
+
 class ruleReconciliation {
   
   
   def reconcile (spark: SparkSession, jobId: String, ruleDataRecord :ruleDataViewRecord, 
-                 sData: Dataset[Row], tData: Dataset[Row], maxReconReference : Long ) : ArrayBuffer[Dataset[Row]] = {
+                 sData: Dataset[Row], tData: Dataset[Row], maxReconReference : Long,
+                 processTime: String) : ArrayBuffer[Dataset[Row]] = {
     
     var reconciledIdsAndStatus : ArrayBuffer[Dataset[Row]] = new ArrayBuffer[Dataset[Row]]()
     
@@ -32,16 +34,18 @@ class ruleReconciliation {
     println("Group By keys : " + KeyCols("Source").mkString(" ") + " - " + KeyCols("Target").mkString(" ") ) 
     
     val filteredSourceDataSet = ReconUtils.filterSourceDataBasedOnRuleType(sourceDataForRecon, KeyCols, ruleDataRecord)
+    filteredSourceDataSet.cache()
     
     println ("stage-2 : Source data count based one ruleType <" + ruleDataRecord.ruleType +"> :" + filteredSourceDataSet.count)
     filteredSourceDataSet.show()
     
     val filteredTargetDataSet = ReconUtils.filterTargetDataBasedOnRuleType(targetDataForRecon, KeyCols, ruleDataRecord)
+    filteredTargetDataSet.cache()
     println ("stage-2 : Target data count based one ruleType <" + ruleDataRecord.ruleType +"> :" + filteredTargetDataSet.count)
     filteredTargetDataSet.show()
     
-    val format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-    val processTime = format.format(Calendar.getInstance().getTime()) 
+//    val format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+//    val processTime = format.format(Calendar.getInstance().getTime()) 
     
     val oneToOne = new OneToOneService ()
     val oneToMany = new OneToManyService()
@@ -61,6 +65,8 @@ class ruleReconciliation {
         println ("Finally we are here for MANY_TO_MANY")
         reconciledIdsAndStatus = manyToMany.reconcileManyToMany(spark, filteredSourceDataSet, filteredTargetDataSet, sourceDataForRecon, targetDataForRecon, ruleDataRecord, jobId, maxReconReference, processTime)
     }
+    filteredSourceDataSet.unpersist()
+    filteredTargetDataSet.unpersist()
     
     reconciledIdsAndStatus
   }

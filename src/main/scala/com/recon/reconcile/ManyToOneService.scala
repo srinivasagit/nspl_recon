@@ -97,8 +97,8 @@ class ManyToOneService {
    	  	       	  	    
    	  	    val reconIdsAndStatusResult = reconciledSRef.union(reconciledTRef)
    	  	                                                //.withColumn("id",functions.row_number().over(Window.orderBy("target_row_id")).plus(maxReconReference))
-   	  	   	println ("ManyToOne - reconcile dataset")
-   	  	    reconIdsAndStatusResult.show()
+//   	  	   	println ("ManyToOne - reconcile dataset")
+//   	  	    reconIdsAndStatusResult.show()
    	  	    reconIdsAndStatus.append(reconIdsAndStatusResult)
    	  	  }   	  	  
 					                                                

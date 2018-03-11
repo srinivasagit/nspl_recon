@@ -92,8 +92,8 @@ class ManyToManyService {
 			                          " - Target data reconciled count : " + reconciledTRef.count())   
 			                         
     	  	   val reconIdsAndStatusResult = reconciledSRef.union(reconciledTRef)
-    	  	   println ("ManyToMany - reconcile dataset")
-        	   reconIdsAndStatusResult.show()
+//    	  	   println ("ManyToMany - reconcile dataset")
+//        	   reconIdsAndStatusResult.show()
         	   
    	  	     reconIdsAndStatus.append(reconIdsAndStatusResult)
    	  	  }  

@@ -127,7 +127,7 @@ class jdbcSparkMySql {
       
       val sourceViewDataFiltered =  spark.read.jdbc(DBObj.mySqlUrl, srcPushDownQuery , DBObj.buildProps())
                                               .selectExpr(selectSourceSQL.map(r => r.toString): _*)
-//                                              .repartition(2)
+//                                              .repartition(4)
       
 //      sourceViewData = spark.read.jdbc(DBObj.mySqlUrl, sourceViewName.toLowerCase(), DBObj.buildProps())
 //      
@@ -147,11 +147,11 @@ class jdbcSparkMySql {
       println ("stage-0 : Source record count to be reconciled : "   + sourceViewDataFiltered.count() +
                " - Partition count : " + sourceViewDataFiltered.rdd.partitions.size ) 
 //               " - data size : " + SizeEstimator.estimate(sourceViewDataFiltered))
-      sourceViewDataFiltered.show()
+//      sourceViewDataFiltered.show()
       
       val targetViewDataFiltered =  spark.read.jdbc(DBObj.mySqlUrl, tarPushDownQuery , DBObj.buildProps())
                                               .selectExpr(selectTargetSQL.map(r => r.toString): _*)
-//                                              .repartition(2)
+//                                              .repartition(4)
                                               
 //      targetViewData = spark.read.jdbc(DBObj.mySqlUrl, targetViewName.toLowerCase(), DBObj.buildProps())
 //      
@@ -171,7 +171,7 @@ class jdbcSparkMySql {
       println ("stage-0 : Target record count to be reconciled : " + targetViewDataFiltered.count() +
                " - Partition count : " + targetViewDataFiltered.rdd.partitions.size ) 
 //               " - data size : " + SizeEstimator.estimate(sourceViewDataFiltered))      
-      targetViewDataFiltered.show()
+//      targetViewDataFiltered.show()
       
       viewWithBaseData.put(sourceViewName, sourceViewDataFiltered)
       viewWithBaseData.put(targetViewName, targetViewDataFiltered)

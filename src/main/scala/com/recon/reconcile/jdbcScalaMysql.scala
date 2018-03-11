@@ -204,7 +204,7 @@ class jdbcScalaMysql {
 	       ruleCondRecord.openBracket_=(rs5.getString("open_bracket"))
 	     }
 	    
-	     if (rs5.getLong("s_column_id") != null ) {
+	     if (rs5.getString("s_column_id") != null ) {
 	       ruleCondRecord.sColumnId_=(rs5.getLong("s_column_id"))
 	     }
 	     
@@ -215,16 +215,16 @@ class jdbcScalaMysql {
 	     if (rs5.getString("s_tolerance_type") != null ) {
 	       ruleCondRecord.sToleranceType_=(rs5.getString("s_tolerance_type"))
 	     }
-	     if (rs5.getBoolean("s_many") != null ) {
+	     if (rs5.getBoolean("s_many") ) {
 	       ruleCondRecord.sMany_=(rs5.getBoolean("s_many"))
 	     }
-	     if (rs5.getLong("t_column_id") != null ) {
+	     if (rs5.getString("t_column_id") != null ) {
 	       ruleCondRecord.tColumnId_=(rs5.getLong("t_column_id"))
 	     }
 	     if (rs5.getString("t_formula") != null ) {
 	       ruleCondRecord.tFormula_=(rs5.getString("t_formula"))
 	     }
-	     if (rs5.getBoolean("t_many") != null) {
+	     if (rs5.getBoolean("t_many")) {
 	       ruleCondRecord.tMany_=(rs5.getBoolean("t_many"))
 	     }
 	     if (rs5.getString("t_tolerance_type") != null) {

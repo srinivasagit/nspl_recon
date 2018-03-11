@@ -42,7 +42,7 @@ object dynamicReconcile {
     
     val spark : SparkSession = new sparkService().getSparkSession()
     spark.sparkContext.setLogLevel("ERROR")
-    spark.sqlContext.setConf("spark.sql.shuffle.partitions", "25")
+    spark.sqlContext.setConf("spark.sql.shuffle.partitions", "20")
     
     val jobId = spark.sparkContext.applicationId
     println ("Recon application ID " + jobId )

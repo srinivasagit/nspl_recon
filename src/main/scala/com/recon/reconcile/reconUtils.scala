@@ -323,16 +323,16 @@ class reconUtils {
 					    sourceCol = "src." + ruleCond.sColumnName
 					    println("sourceCol : " + sourceCol)
 					 }
-//					 if ((ruleCond.sMany != null) && (ruleCond.sMany == true )) {
-					 if ((ruleCond.sMany != null) && (ruleCond.sMany == '1' )) {
+					 if ((ruleCond.sMany != null) && (ruleCond.sMany == true )) {
+//					 if ((ruleCond.sMany != null) && (ruleCond.sMany == '1' )) {
 					    sourceCol = "src.SUMTOTAL_TEMP"
 					    println("sourceCol at sMany: " + sourceCol)
 					 }
 					 if (ruleCond.tColumnName != null) {
 					    targetCol = "tar." + ruleCond.tColumnName
 					 }
-//					 if ((ruleCond.tMany != null) && (ruleCond.tMany == true )) {
-					 if ((ruleCond.tMany != null) && (ruleCond.tMany == '1' )) {
+					 if ((ruleCond.tMany != null) && (ruleCond.tMany == true )) {
+//					 if ((ruleCond.tMany != null) && (ruleCond.tMany == '1' )) {
 					    targetCol = "tar.SUMTOTAL_TEMP"
 					 }
 

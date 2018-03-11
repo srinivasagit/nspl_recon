@@ -103,8 +103,8 @@ class OneToOneService {
 			    reconciledWithId = reconciledS.union(reconciledT)
 //			                                  .withColumn("id",functions.row_number().over(Window.orderBy("original_row_id")).plus(ReconReference))          
 			    reconIdsAndStatusArray.append(reconciledWithId)
-			    println ("OneToOne - reconcile dataset")
-			    reconciledWithId.show()
+//			    println ("OneToOne - reconcile dataset")
+//			    reconciledWithId.show()
       }
       reconIdsAndStatusArray
     }

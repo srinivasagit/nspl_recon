@@ -24,28 +24,28 @@ class ruleReconciliation {
     val targetDataForRecon = ReconUtils.filterTargetData(spark, tData, ruleDataRecord)
     
     println ("stage-1 : Source data count after Filtering - " + sourceDataForRecon.count())
-    sourceDataForRecon.show()
-    sourceDataForRecon.cache()
+//    sourceDataForRecon.show()
+//    sourceDataForRecon.cache()
     
     println ("stage-1 : Target data count after Filtering - " + targetDataForRecon.count())
-    targetDataForRecon.show()
-    targetDataForRecon.cache()
+//    targetDataForRecon.show()
+//    targetDataForRecon.cache()
     
     var KeyCols : HashMap[String, ArrayBuffer[Column]] = ReconUtils.getGroupByCols(ruleDataRecord)
     
     println("Group By keys : " + KeyCols("Source").mkString(" ") + " - " + KeyCols("Target").mkString(" ") ) 
     
     val filteredSourceDataSet = ReconUtils.filterSourceDataBasedOnRuleType(sourceDataForRecon, KeyCols, ruleDataRecord)
-//    filteredSourceDataSet.cache()
+    filteredSourceDataSet.cache()
     
     println ("stage-2 : Source data count based one ruleType <" + ruleDataRecord.ruleType +"> :" + filteredSourceDataSet.count)
-    filteredSourceDataSet.show()
+//    filteredSourceDataSet.show()
     
     val filteredTargetDataSet = ReconUtils.filterTargetDataBasedOnRuleType(targetDataForRecon, KeyCols, ruleDataRecord)
-//    filteredTargetDataSet.cache()
+    filteredTargetDataSet.cache()
     
     println ("stage-2 : Target data count based one ruleType <" + ruleDataRecord.ruleType +"> :" + filteredTargetDataSet.count)
-    filteredTargetDataSet.show()
+//    filteredTargetDataSet.show()
     
 //    val format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 //    val processTime = format.format(Calendar.getInstance().getTime()) 
@@ -68,8 +68,10 @@ class ruleReconciliation {
         println ("Finally we are here for MANY_TO_MANY")
         reconciledIdsAndStatus = manyToMany.reconcileManyToMany(spark, filteredSourceDataSet, filteredTargetDataSet, sourceDataForRecon, targetDataForRecon, ruleDataRecord, jobId, maxReconReference, processTime)
     }
-//    filteredSourceDataSet.unpersist()
-//    filteredTargetDataSet.unpersist()
+    filteredSourceDataSet.unpersist()
+    filteredTargetDataSet.unpersist()
+//    targetDataForRecon.unpersist()
+//    sourceDataForRecon.unpersist()
     
     reconciledIdsAndStatus
   }

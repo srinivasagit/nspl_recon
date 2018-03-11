@@ -83,6 +83,7 @@ class reconUtils {
   def filterSourceData(spark : SparkSession, sData: Dataset[Row], ruleDataRecord :ruleDataViewRecord) : Dataset[Row] = {
     
     var sourceDataForReconFiltered : Dataset[Row] = sData
+    import spark.sqlContext.implicits._
     import spark.implicits._
     
     for (ruleCond: ruleConditionRecord <- ruleDataRecord.ruleConditions) {
@@ -90,9 +91,9 @@ class reconUtils {
       if (ruleCond.operator == null || ruleCond.operator.equals("") ) {
          if (ruleCond.sOperator != null) { 
             if (ruleCond.sOperator.equalsIgnoreCase("=") || ruleCond.sOperator.equalsIgnoreCase("EQUALS") ) {
-              sourceDataForReconFiltered = sourceDataForReconFiltered.filter("$(" + ruleCond.sColumnName + ") == '" + ruleCond.sValue.toLowerCase() + "'")
+              sourceDataForReconFiltered = sourceDataForReconFiltered.filter(ruleCond.sColumnName + " = \"" + ruleCond.sValue.toLowerCase() + "\"")
             } else if (ruleCond.sOperator.equalsIgnoreCase("CONTAINS")) {
-              sourceDataForReconFiltered = sourceDataForReconFiltered.filter("$("+ruleCond.sColumnName + ")."+ "contains(" + ruleCond.sValue.toLowerCase() + ")")
+              sourceDataForReconFiltered = sourceDataForReconFiltered.filter(ruleCond.sColumnName + "."+ "contains('%" + ruleCond.sValue.toLowerCase() + "%')")
             }
          }
       }
@@ -110,6 +111,7 @@ class reconUtils {
   def filterTargetData(spark : SparkSession, tData: Dataset[Row], ruleDataRecord :ruleDataViewRecord) : Dataset[Row] = {
     
     var targetDataForReconFiltered : Dataset[Row] = tData
+    import spark.sqlContext.implicits._
     import spark.implicits._
     
     for (ruleCond: ruleConditionRecord <- ruleDataRecord.ruleConditions) {
@@ -117,9 +119,9 @@ class reconUtils {
       if (ruleCond.operator == null || ruleCond.operator.equals("") ) {
          if (ruleCond.tOperator != null) { 
             if (ruleCond.tOperator.equalsIgnoreCase("=") || ruleCond.tOperator.equalsIgnoreCase("EQUALS") ) {
-              targetDataForReconFiltered = targetDataForReconFiltered.filter("$(" + ruleCond.tColumnName + ") == '" + ruleCond.tValue.toLowerCase() + "'")
+              targetDataForReconFiltered = targetDataForReconFiltered.filter( ruleCond.tColumnName + " = \"" + ruleCond.tValue.toLowerCase() + "\"")
             } else if (ruleCond.tOperator.equalsIgnoreCase("CONTAINS")) {
-              targetDataForReconFiltered = targetDataForReconFiltered.filter("$("+ruleCond.tColumnName + ")."+ "contains(" + ruleCond.tValue.toLowerCase() + ")")
+              targetDataForReconFiltered = targetDataForReconFiltered.filter(ruleCond.tColumnName + "." + "contains('%" + ruleCond.tValue + "%')" )
             }
          }
       }
@@ -319,14 +321,18 @@ class reconUtils {
 					 
 					 if (ruleCond.sColumnName != null) {
 					    sourceCol = "src." + ruleCond.sColumnName
+					    println("sourceCol : " + sourceCol)
 					 }
-					 if ((ruleCond.sMany != null) && (ruleCond.sMany == true )) {
+//					 if ((ruleCond.sMany != null) && (ruleCond.sMany == true )) {
+					 if ((ruleCond.sMany != null) && (ruleCond.sMany == '1' )) {
 					    sourceCol = "src.SUMTOTAL_TEMP"
+					    println("sourceCol at sMany: " + sourceCol)
 					 }
 					 if (ruleCond.tColumnName != null) {
 					    targetCol = "tar." + ruleCond.tColumnName
 					 }
-					 if ((ruleCond.tMany != null) && (ruleCond.tMany == true )) {
+//					 if ((ruleCond.tMany != null) && (ruleCond.tMany == true )) {
+					 if ((ruleCond.tMany != null) && (ruleCond.tMany == '1' )) {
 					    targetCol = "tar.SUMTOTAL_TEMP"
 					 }
 
@@ -475,10 +481,10 @@ class reconUtils {
        
      }
      if (whereClause.trim().endsWith("OR") ) {
-       whereClause = whereClause.substring(0, whereClause.length() - 2);
+       whereClause = whereClause.substring(0, whereClause.length() - 3);
      }
      if (whereClause.trim().endsWith("AND") ) {
-       whereClause = whereClause.substring(0, whereClause.length() - 3);
+       whereClause = whereClause.substring(0, whereClause.length() - 4);
      }
      whereClause
    }

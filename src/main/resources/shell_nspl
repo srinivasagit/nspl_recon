@@ -1,0 +1,90 @@
+import com.mysql.jdbc.Driver
+import java.util.Properties
+import scala.collection.mutable.ArrayBuffer
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.functions
+import org.apache.spark.sql.expressions.Window
+import org.apache.spark.sql.Column
+
+var properties = new Properties
+val mySqlDriver = "com.mysql.jdbc.Driver"
+properties.setProperty("driver", mySqlDriver)
+properties.setProperty("user", "root")
+properties.setProperty("password", "123456")
+
+spark.sqlContext.setConf("spark.sql.shuffle.partitions", "25")
+
+val url = "jdbc:mysql://localhost:3306/"
+val table = "recon_test.Source_data_11"
+val srcData = spark.read.jdbc(url, table.toLowerCase(), properties)
+spark.read.jdbc(url,queryFetchMaxReconRef,properties)
+val table2 = "recon_test.bank_data_11"
+val tarData = spark.read.jdbc(url, table2.toLowerCase(), properties)
+
+val selectSourceSQL : ArrayBuffer[String] = ArrayBuffer("scrIds", "TO_DATE(CAST(UNIX_TIMESTAMP( Date_3, 'yyyy-MM-dd') AS TIMESTAMP)) as Date_3", "lower(ProviderName_3) as ProviderName_3", "lower(CurrencyCode_3) as CurrencyCode_3", "cast(Amount_3 as decimal(38,5)) as Amount_3")
+
+
+val selectTargetSQL : ArrayBuffer[String] =ArrayBuffer("scrIds", "TO_DATE(CAST(UNIX_TIMESTAMP( Date_4, 'yyyy-MM-dd') AS TIMESTAMP)) as Date_4", "lower(Provider_4) as Provider_4", "cast(Amt_4 as decimal(38,5)) as Amt_4", "lower(Currency_4) as Currency_4")
+
+
+val srcDataSelect = srcData.selectExpr(selectSourceSQL.map(r => r.toString): _*)
+val tarDataSelect = tarData.selectExpr(selectTargetSQL.map(r => r.toString): _*)
+
+val table_reconciled = "recon_test.t_reconciliation_result"
+
+val reconciledSIds = spark.read.jdbc(url, table_reconciled.toLowerCase(), properties).where("original_view_id=3" ).select("original_row_id").withColumnRenamed("original_row_id", "scrIds")
+
+val reconciledTIds = spark.read.jdbc(url, table_reconciled.toLowerCase(), properties).where("original_view_id=4").select("original_row_id").withColumnRenamed("original_row_id", "scrIds")
+
+val sourceDataFiltered = srcDataSelect.join(reconciledSIds,Seq("scrIds"), "leftanti")
+val targetDataFiltered = tarDataSelect.join(reconciledTIds,Seq("scrIds"), "leftanti")
+
+ONE_TO_MANY:
+
+val sGByCols = ArrayBuffer("ProviderName_3", "CurrencyCode_3", "Amount_3", "Date_3")
+val tGByCols = ArrayBuffer("Provider_4", "Currency_4", "Date_4")
+
+val uniqueSourceIds = sourceDataFiltered.groupBy(sGByCols.map (c => new Column(c)): _*).count.filter("count = 1")
+val sourceDataForReconFiltered = sourceDataFiltered.join(uniqueSourceIds, sGByCols.map(r => r.toString).toSeq).drop(uniqueSourceIds.col("count"))
+
+
+val multiTargetIds = targetDataFiltered.groupBy(tGByCols.map (c => new Column(c)) : _*).count.filter("count > 1")
+val targetDataForRecon = targetDataFiltered.join(multiTargetIds, tGByCols.map(r => r.toString).toSeq).drop(multiTargetIds.col("count"))
+
+val targetDataForReconFiltered = targetDataForRecon.groupBy(tGByCols.map (c => new Column(c)) : _*).sum("Amt_4").withColumnRenamed("sum(Amt_4)", "SUMTOTAL_TEMP")
+
+sourceDataForReconFiltered.createOrReplaceTempView("srcForRecon");
+targetDataForReconFiltered.createOrReplaceTempView("tarForRecon");
+
+val whereClause ="src.ProviderName_3 = tar.Provider_4 AND  src.CurrencyCode_3 = tar.Currency_4 AND  src.Amount_3 = tar.SUMTOTAL_TEMP AND  tar.Date_4 BETWEEN DATE_ADD(src.Date_3,0) AND  DATE_ADD(src.Date_3,3)"
+
+val whereClause ="src.ProviderName_3 = tar.Provider_4 AND  src.CurrencyCode_3 = tar.Currency_4 AND  src.Amount_3 BETWEEN tar.SUMTOTAL_TEMP -2 AND tar.SUMTOTAL_TEMP +2 AND  tar.Date_4 BETWEEN DATE_ADD(src.Date_3,0) AND  DATE_ADD(src.Date_3,3)"
+
+val selectSql = "select src.*, tar.* from srcForRecon src, tarForRecon tar where " + whereClause;
+
+val reconciledSid129 = spark.sql(selectSql)
+
+val reconciledSid129Bk = reconciledSid129.select("scrIds")
+val reconciledSid129Bkp = reconciledSid129Bk.withColumnRenamed("scrIds", "original_row_id");
+val reconciledSid129WithRef = reconciledSid129Bkp.withColumn("recon_reference", functions.row_number().over(Window.orderBy("original_row_id")).plus(Reconciliation.getReconReference()));
+
+val reconciledSid129WithRefFinal = reconciledSid129.join(reconciledSid129WithRef,reconciledSid129.col("scrIds").equalTo(reconciledSid129WithRef.col("original_row_id"))).withColumnRenamed("scrIds", "original_row_id")
+
+val reconciledCount = reconciledSid129WithRef.count();
+
+val colNames: Array[String] = targetDataForReconFiltered.schema.fieldNames.filter(c => c != "SUMTOTAL_TEMP")
+
+val reconciledTIdJoin = targetDataFiltered.join(reconciledSid129WithRefFinal,colNames.toSeq, "INNER")
+
+val reconciledTIdJoinWithRef = reconciledTIdJoin.select("scrIds", "recon_reference").withColumnRenamed("scrIds", "target_row_id")
+
+-----------------
+src= 703
+tar=4891
+scrIds, TO_DATE(CAST(UNIX_TIMESTAMP( Date_3, 'yyyy-MM-dd') AS TIMESTAMP)) as Date_3, lower(ProviderName_3) as ProviderName_3, lower(CurrencyCode_3) as CurrencyCode_3, cast(Amount_3 as decimal(38,5)) as Amount_3
+
+Source_data_11 - id =3
+scrIds, lower(ProviderName_3) as ProviderName_3, lower(CurrencyCode_3) as CurrencyCode_3, cast(Amount_3 as decimal(38,5)) as Amount_3 -->s
+
+Bank_data_11  - id = 4
+scrIds, lower(Provider_4) as Provider_4, lower(Currency_4) as Currency_4, cast(Amt_4 as decimal(38,5)) as Amt_4  -->t

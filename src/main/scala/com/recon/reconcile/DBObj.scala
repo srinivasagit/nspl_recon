@@ -22,6 +22,7 @@ object DBObj {
 		 private val _mySqlDriver = "com.mysql.jdbc.Driver"
 		 private var properties : Properties = _
 		 private val _module: String = "RECON"
+		 private val _target_dbName : String = "guestrecon"
 
 		 def dbHost = _dbHost
 		 def dbName = _dbName
@@ -37,6 +38,8 @@ object DBObj {
 		 def mySqlUrl = _mySqlUrl
 		 def mySqlDriver = _mySqlDriver
 		 def module = _module
+		 def target_dbName = _target_dbName
+		 def target_mySqlUrl= "jdbc:mysql://" + dbHost + '/' + target_dbName
 		 
 		 def utils(arguments : Array [String]):Unit = {
 	     

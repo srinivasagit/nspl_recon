@@ -65,7 +65,8 @@ class jdbcSparkMySql {
     try {
         val table_reconciled : String = "t_reconciliation_result"
 //        println ("JDBC properties :" + DBObj.buildProps() + " url :" + DBObj.mySqlUrl)
-        resultToDB.write.mode("APPEND").jdbc(DBObj.mySqlUrl, table_reconciled, DBObj.buildProps())
+//        resultToDB.write.mode("APPEND").jdbc(DBObj.mySqlUrl, table_reconciled, DBObj.buildProps())
+        resultToDB.write.mode("APPEND").jdbc(DBObj.target_mySqlUrl, table_reconciled, DBObj.buildProps())
     
         } catch {
 		      case e: Exception => { e.printStackTrace(); None}

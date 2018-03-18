@@ -37,12 +37,13 @@ class jdbcSparkMySql {
   	def getMaxReconRef (spark : SparkSession) : Option[Long] = {
 	   
 	   try {
-	         val queryFetchMaxReconRef = "(SELECT max(CONVERT(recon_reference,UNSIGNED INTEGER)) as recon_reference FROM " +  DBObj.dbName + ".t_reconciliation_result) as k"
+	         val queryFetchMaxReconRef = "(SELECT max(CONVERT(recon_reference,UNSIGNED INTEGER)) as recon_reference FROM t_reconciliation_result) as k"
 	  	     println ("Recon Ref Query:" + queryFetchMaxReconRef)
 	  	     
 //	  	     spark.read.jdbc(DBObj.mySqlUrl, sourceViewName.toLowerCase(), DBObj.buildProps()).
 	  	     var maxRefRecon : Long = 0L
-	  	     maxRefRecon = spark.read.jdbc(DBObj.mySqlUrl, queryFetchMaxReconRef, DBObj.buildProps())
+//	  	     maxRefRecon = spark.read.jdbc(DBObj.mySqlUrl, queryFetchMaxReconRef, DBObj.buildProps())
+	  	     maxRefRecon = spark.read.jdbc(DBObj.target_mySqlUrl, queryFetchMaxReconRef, DBObj.buildProps())
 	  	                             .collectAsList().get(0).getDecimal(0).longValue()
 	  	                             
 //	         val statement = connection.createStatement
@@ -113,11 +114,11 @@ class jdbcSparkMySql {
       val predicate_t :String  = " t.target_view_id = " + targetViewID
       
       val srcPushDownQuery = "( SELECT  s.* FROM " + sourceViewName.toLowerCase() + " AS s " +
-                                " WHERE s.scrIds NOT in (SELECT t.original_row_id as scrIds From t_reconciliation_result t WHERE " + 
-                                predicate_s + " ) ) srcRecFilter"
+                                " WHERE s.scrIds NOT in (SELECT t.original_row_id as scrIds From "+ DBObj.target_dbName + ".t_reconciliation_result t WHERE " + 
+                                 predicate_s + " ) ) srcRecFilter"
                                 
       val tarPushDownQuery = "( SELECT tar.* FROM " + targetViewName.toLowerCase() + " AS tar " +  
-                                " WHERE tar.scrIds NOT in (SELECT t.target_row_id as scrIds From t_reconciliation_result t WHERE " + 
+                                " WHERE tar.scrIds NOT in (SELECT t.target_row_id as scrIds From "+ DBObj.target_dbName + ".t_reconciliation_result t WHERE " + 
                                 predicate_t + " ) ) tarRecFilter"
                                 
       println( "Source pushdown query :")

@@ -54,7 +54,7 @@ class reconUtils {
         
         if (colsIter(2) == null || colsIter(2).equals("") || 
             colsIter(2).equalsIgnoreCase( "varchar") )         {
-            selectSQL = "lower(" + colsIter(1) + ") as " + colsIter(1)
+            selectSQL = "lower(`" + colsIter(1) + "`) as " + colsIter(1)
             temp_t.append(selectSQL)
         } else {
            if (colsIter(2).equalsIgnoreCase( "NUMBER") || colsIter(2).equalsIgnoreCase( "INTEGER") )  {
@@ -93,7 +93,9 @@ class reconUtils {
             if (ruleCond.sOperator.equalsIgnoreCase("=") || ruleCond.sOperator.equalsIgnoreCase("EQUALS") ) {
               sourceDataForReconFiltered = sourceDataForReconFiltered.filter(ruleCond.sColumnName + " = \"" + ruleCond.sValue.toLowerCase() + "\"")
             } else if (ruleCond.sOperator.equalsIgnoreCase("CONTAINS")) {
-              sourceDataForReconFiltered = sourceDataForReconFiltered.filter(ruleCond.sColumnName + "."+ "contains('%" + ruleCond.sValue.toLowerCase() + "%')")
+              
+//              val filterString = ruleCond.sColumnName + "."+ "contains( ruleCond.sValue.toLowerCase())" 
+              sourceDataForReconFiltered = sourceDataForReconFiltered.filter(org.apache.spark.sql.functions.col(ruleCond.sColumnName).contains(ruleCond.sValue.toLowerCase()))
             }
          }
       }
@@ -121,7 +123,8 @@ class reconUtils {
             if (ruleCond.tOperator.equalsIgnoreCase("=") || ruleCond.tOperator.equalsIgnoreCase("EQUALS") ) {
               targetDataForReconFiltered = targetDataForReconFiltered.filter( ruleCond.tColumnName + " = \"" + ruleCond.tValue.toLowerCase() + "\"")
             } else if (ruleCond.tOperator.equalsIgnoreCase("CONTAINS")) {
-              targetDataForReconFiltered = targetDataForReconFiltered.filter(ruleCond.tColumnName + "." + "contains('%" + ruleCond.tValue + "%')" )
+//              targetDataForReconFiltered = targetDataForReconFiltered.filter(ruleCond.tColumnName + "." + "contains('%" + ruleCond.tValue + "%')" )
+              targetDataForReconFiltered = targetDataForReconFiltered.filter(org.apache.spark.sql.functions.col(ruleCond.tColumnName).contains(ruleCond.tValue.toLowerCase()))
             }
          }
       }

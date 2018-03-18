@@ -217,6 +217,7 @@ class jdbcScalaMysql {
 	     }
 	     if (rs5.getBoolean("s_many") ) {
 	       ruleCondRecord.sMany_=(rs5.getBoolean("s_many"))
+	       println("super sMany test field: " + ruleCondRecord.sMany + " ~ " + rs5.getBoolean("s_many")  )
 	     }
 	     if (rs5.getString("t_column_id") != null ) {
 	       ruleCondRecord.tColumnId_=(rs5.getLong("t_column_id"))
@@ -226,6 +227,7 @@ class jdbcScalaMysql {
 	     }
 	     if (rs5.getBoolean("t_many")) {
 	       ruleCondRecord.tMany_=(rs5.getBoolean("t_many"))
+	       println("super tMany test field: " + ruleCondRecord.tMany + " ~ " + rs5.getBoolean("t_many")  )
 	     }
 	     if (rs5.getString("t_tolerance_type") != null) {
 	       ruleCondRecord.tToleranceType_=(rs5.getString("t_tolerance_type"))
@@ -344,7 +346,7 @@ class jdbcScalaMysql {
 	                   ruleCondRecord.sColDataFormat_=("yyyy-MM-dd")
 	                } else if (ruleCondRecord.sColDataType.equalsIgnoreCase("decimal")) {
 	                   ruleCondRecord.sColDataFormat_=("")
-	                   ruleCondRecord.sMany_=(true)
+//	                   ruleCondRecord.sMany_=(true)     //check
 	                }
 	                ruleCondRecord.sColumnName_=(rs6.getString("column_name"))
 	              }
@@ -403,7 +405,7 @@ class jdbcScalaMysql {
 	                   ruleCondRecord.tColDataFormat_=("yyyy-MM-dd")
 	                } else if (ruleCondRecord.tColDataType.equalsIgnoreCase("decimal")) {
 	                   ruleCondRecord.tColDataFormat_=("")
-	                   ruleCondRecord.tMany_=(true)
+//	                   ruleCondRecord.tMany_=(true)    //check
 	                }
 	                ruleCondRecord.tColumnName_=(rs6.getString("column_name"))
 	              }

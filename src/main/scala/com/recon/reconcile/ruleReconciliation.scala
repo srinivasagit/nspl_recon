@@ -12,7 +12,7 @@ class ruleReconciliation {
   
   def reconcile (spark: SparkSession, jobId: String, ruleDataRecord :ruleDataViewRecord, 
                  sData: Dataset[Row], tData: Dataset[Row], maxReconReference : Long,
-                 processTime: String) : ArrayBuffer[Dataset[Row]] = {
+                 processTime: String, DBObj : DBdetails) : ArrayBuffer[Dataset[Row]] = {
     
     var reconciledIdsAndStatus : ArrayBuffer[Dataset[Row]] = new ArrayBuffer[Dataset[Row]]()
     
@@ -57,16 +57,16 @@ class ruleReconciliation {
     
     if (ruleDataRecord.ruleType.equals("ONE_TO_ONE")) {
         println ("Finally we are here for ONE_TO_ONE")
-        reconciledIdsAndStatus = oneToOne.reconcileOneToOne(spark, filteredSourceDataSet, filteredTargetDataSet, ruleDataRecord, jobId, maxReconReference, processTime)
+        reconciledIdsAndStatus = oneToOne.reconcileOneToOne(spark, filteredSourceDataSet, filteredTargetDataSet, ruleDataRecord, jobId, maxReconReference, processTime, DBObj : DBdetails)
     } else if (ruleDataRecord.ruleType.equals("ONE_TO_MANY")) {
         println ("Finally we are here for ONE_TO_MANY")
-        reconciledIdsAndStatus = oneToMany.reconcileOneToMany(spark, filteredSourceDataSet, filteredTargetDataSet, targetDataForRecon, ruleDataRecord, jobId, maxReconReference, processTime)
+        reconciledIdsAndStatus = oneToMany.reconcileOneToMany(spark, filteredSourceDataSet, filteredTargetDataSet, targetDataForRecon, ruleDataRecord, jobId, maxReconReference, processTime, DBObj : DBdetails)
     } else if (ruleDataRecord.ruleType.equals("MANY_TO_ONE")) {
         println ("Finally we are here for MANY_TO_ONE")
-        reconciledIdsAndStatus = manyToOne.reconcileManyToOne(spark, filteredSourceDataSet, filteredTargetDataSet, sourceDataForRecon, ruleDataRecord, jobId, maxReconReference, processTime)
+        reconciledIdsAndStatus = manyToOne.reconcileManyToOne(spark, filteredSourceDataSet, filteredTargetDataSet, sourceDataForRecon, ruleDataRecord, jobId, maxReconReference, processTime, DBObj : DBdetails)
     }  else if (ruleDataRecord.ruleType.equals("MANY_TO_MANY")) {
         println ("Finally we are here for MANY_TO_MANY")
-        reconciledIdsAndStatus = manyToMany.reconcileManyToMany(spark, filteredSourceDataSet, filteredTargetDataSet, sourceDataForRecon, targetDataForRecon, ruleDataRecord, jobId, maxReconReference, processTime)
+        reconciledIdsAndStatus = manyToMany.reconcileManyToMany(spark, filteredSourceDataSet, filteredTargetDataSet, sourceDataForRecon, targetDataForRecon, ruleDataRecord, jobId, maxReconReference, processTime, DBObj : DBdetails)
     }
     filteredSourceDataSet.unpersist()
     filteredTargetDataSet.unpersist()

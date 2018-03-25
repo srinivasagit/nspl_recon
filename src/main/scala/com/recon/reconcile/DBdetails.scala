@@ -3,7 +3,7 @@ package com.recon.reconcile
 import java.util.Properties
 import com.mysql.jdbc.Driver
 
-object DBObj {
+class DBdetails {
 	   private var _dbHost: String = null
 		 private var _dbName: String = null
 		 private var _dbUser: String = null
@@ -22,7 +22,7 @@ object DBObj {
 		 private val _mySqlDriver = "com.mysql.jdbc.Driver"
 		 private var properties : Properties = _
 		 private val _module: String = "RECON"
-		 private val _target_dbName : String = "guestrecon"
+//		 private val _target_dbName : String = "guestrecon"
 
 		 def dbHost = _dbHost
 		 def dbName = _dbName
@@ -38,7 +38,8 @@ object DBObj {
 		 def mySqlUrl = _mySqlUrl
 		 def mySqlDriver = _mySqlDriver
 		 def module = _module
-		 def target_dbName = _target_dbName
+//		 def target_dbName = _target_dbName
+		 def target_dbName = _dbName
 		 def target_mySqlUrl= "jdbc:mysql://" + dbHost + '/' + target_dbName
 		 
 		 def utils(arguments : Array [String]):Unit = {

@@ -52,11 +52,16 @@ class reconUtils {
         
         var colsIter : List[String] = colIterator.next().toList
         
-        if (colsIter(2) == null || colsIter(2).equals("") || 
-            colsIter(2).equalsIgnoreCase( "varchar") )         {
-            selectSQL = "lower(`" + colsIter(1) + "`) as " + colsIter(1)
+        if ((colsIter(2) == null || colsIter(2).equals("") || 
+             colsIter(2).equalsIgnoreCase( "varchar")) && (colsIter(1).contains(" ")))         {
+            selectSQL = "lower(`" + colsIter(1) + "`) as `" + colsIter(1) + "`"  
             temp_t.append(selectSQL)
-        } else {
+        } else if ((colsIter(2) == null || colsIter(2).equals("") || 
+                    colsIter(2).equalsIgnoreCase( "varchar"))) {
+            selectSQL = "lower(" + colsIter(1) + ") as " + colsIter(1)
+            temp_t.append(selectSQL)          
+        }
+        else {
            if (colsIter(2).equalsIgnoreCase( "NUMBER") || colsIter(2).equalsIgnoreCase( "INTEGER") )  {
                selectSQL = "cast(" + colsIter(1) + " as int) as " + colsIter(1)
                temp_t.append(selectSQL)               

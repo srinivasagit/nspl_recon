@@ -11,7 +11,7 @@ class OneToOneService {
   
    def reconcileOneToOne (spark: SparkSession, filteredSourceDataSet : Dataset[Row],
                           filteredTargetDataSet  : Dataset[Row], ruleDataRecord :ruleDataViewRecord, 
-                          jobId: String, maxReconReference: Long, processTime: String) : ArrayBuffer[Dataset[Row]] = {
+                          jobId: String, maxReconReference: Long, processTime: String, DBObj : DBdetails) : ArrayBuffer[Dataset[Row]] = {
      
      var reconIdsAndStatus = new ArrayBuffer[Dataset[Row]] ()
      val ReconcileUtils = new reconUtils()

@@ -14,7 +14,8 @@ class ManyToManyService {
                             filteredTargetDataSet : Dataset[Row], sourceDataForRecon: Dataset[Row], 
                             targetDataForRecon : Dataset[Row],
                             ruleDataRecord :ruleDataViewRecord,jobId: String,  
-                            maxReconReference: Long, processTime: String) : ArrayBuffer[Dataset[Row]] = {
+                            maxReconReference: Long, processTime: String,
+                            DBObj : DBdetails) : ArrayBuffer[Dataset[Row]] = {
     
       val reconIdsAndStatus = new ArrayBuffer[Dataset[Row]]()
       val ReconcileUtils = new reconUtils()

@@ -3,6 +3,7 @@ package com.recon.reconcile
 import java.util.Calendar 
 import java.util.Date
 import java.util
+import java.util.Properties
 import java.text.SimpleDateFormat
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.{HashMap,HashSet}
@@ -13,6 +14,7 @@ import java.sql.{Connection,Statement,DriverManager}
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions
+
 
 object dynamicReconcile {
   
@@ -29,15 +31,15 @@ object dynamicReconcile {
    
     if (args.length != 11 ) {
       println("**************************************")
-      println("**************************************")
       println("ERROR : Incorrect No. of parameters")
       println("**************************************")
-      println("**************************************")      
       System.exit(1)
     }
     
+    val DBObj = new DBdetails()
+
     DBObj.utils(args)
-    
+                                    
     println ("Check Database Name : %s".format(DBObj.dbName)) 
     
     val spark : SparkSession = new sparkService().getSparkSession()
@@ -48,17 +50,26 @@ object dynamicReconcile {
     println ("Recon application ID " + jobId )
     
     val jdbcMySql = new jdbcScalaMysql()
-    val conn: Connection = jdbcMySql.openMysqlConn()
+    val conn: Connection = jdbcMySql.openMysqlConn(DBObj : DBdetails)
     println("Mysql Connection created..") 
     
     if ( DBObj.ruleGroupId != 0L ) {
       println("JDBC Connection to MySQL using Scala - start: %s".format(Calendar.getInstance().getTime()))
       val sTime = Calendar.getInstance().getTime()
       
-      jdbcMySql.fetchTenantId(conn : Connection)
+      val tenantId: Long = jdbcMySql.fetchTenantId(conn : Connection, DBObj : DBdetails).getOrElse(0L)
       
+      if (tenantId == 0L) {
+        println ("*************************************************")
+        println ("ERROR : Tenant is either inactive or not found")
+        println ("*************************************************")
+        System.exit(1)
+      } else {
+        println("Tenant id Found = " + DBObj.tenantId)
+      }
+        
       println("JDBC Connection to MySQL using Scala - End: %s".format(Calendar.getInstance().getTime()))
-      println("Tenant id Found = " + DBObj.tenantId)
+      
           
       val jdbcSpark = new jdbcSparkMySql()
       
@@ -67,13 +78,13 @@ object dynamicReconcile {
 //      println("Tenant id Found = " + DBObj.tenantId)
 //      println("Time taken for jdbc spark: %s".format(Calendar.getInstance().getTime()))
       
-      if (jdbcMySql.checkTenantStatus(conn : Connection).get) {
+      if (jdbcMySql.checkTenantStatus(conn : Connection, DBObj : DBdetails).getOrElse(false)) {
     
         println ("Tenant is Active")
         
         var ruleConditions = new ArrayBuffer[ruleDataViewRecord]()
             
-        ruleConditions = jdbcMySql.retrieveRules(conn : Connection)
+        ruleConditions = jdbcMySql.retrieveRules(conn : Connection, DBObj : DBdetails)
         
         println (" Rules Count: " + ruleConditions.size)
         
@@ -84,7 +95,7 @@ object dynamicReconcile {
                    " - started " + Calendar.getInstance().getTime() )
 
           val reconciliationUtils =  new reconUtils()
-          val maxReconRef = jdbcSpark.getMaxReconRef(spark : SparkSession).getOrElse(0L)
+          val maxReconRef = jdbcSpark.getMaxReconRef(spark : SparkSession, DBObj : DBdetails).getOrElse(0L)
           
           println ("Executing Rulename :"              + ruleRecord.ruleType + 
                    " - Rule Id :"                      + ruleRecord.ruleId   +    
@@ -94,7 +105,10 @@ object dynamicReconcile {
        
           println ("DataViewColumnNames :" + dataViewColumnNames)
           
-          var ViewAndDataset : HashMap[String, Dataset[Row]] = jdbcSpark.fetchViewAndBaseData(spark : SparkSession, ruleRecord : ruleDataViewRecord, dataViewColumnNames)
+          var ViewAndDataset : HashMap[String, Dataset[Row]] = jdbcSpark.fetchViewAndBaseData(spark : SparkSession, 
+                                                                                              ruleRecord : ruleDataViewRecord, 
+                                                                                              dataViewColumnNames,
+                                                                                              DBObj : DBdetails)
           
           var sourceData: Dataset[Row] = null
           var targetData: Dataset[Row] = null
@@ -114,7 +128,8 @@ object dynamicReconcile {
           } else {
             
           val RuleReconciliation = new ruleReconciliation()
-          reconciledSrcTarIds = RuleReconciliation.reconcile(spark, jobId, ruleRecord, sourceData, targetData, maxReconRef, processTime)
+          reconciledSrcTarIds = RuleReconciliation.reconcile(spark, jobId, ruleRecord, sourceData, targetData, 
+                                                              maxReconRef, processTime, DBObj : DBdetails)
           
           println ("Executing Rulename :" + ruleRecord.ruleType  + " - Dataset count : " + reconciledSrcTarIds.size )
           println ("Executing Rulename :" + ruleRecord.ruleType  + " - Ended " + Calendar.getInstance().getTime())
@@ -149,7 +164,7 @@ object dynamicReconcile {
 						                  .withColumn("final_action_date", functions.lit(null).cast("Timestamp"))
             
            resultToDB.show()
-           jdbcSpark.writeToDatabase (spark : SparkSession, resultToDB : Dataset[Row])
+           jdbcSpark.writeToDatabase (spark : SparkSession, resultToDB : Dataset[Row], DBObj : DBdetails)
            
            println ("Committing result to database : " + ruleRecord.ruleType  + " - Ended " + Calendar.getInstance().getTime())
            

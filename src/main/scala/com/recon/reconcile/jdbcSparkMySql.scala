@@ -9,6 +9,7 @@ import org.apache.spark.sql.Column
 import com.mysql.jdbc.Connection
 import org.apache.spark.util.SizeEstimator
 
+
 class jdbcSparkMySql {
   
   
@@ -34,7 +35,7 @@ class jdbcSparkMySql {
 //			}
 //  }
   
-  	def getMaxReconRef (spark : SparkSession) : Option[Long] = {
+  	def getMaxReconRef (spark : SparkSession, DBObj : DBdetails) : Option[Long] = {
 	   
 	   try {
 	         val queryFetchMaxReconRef = "(SELECT max(CONVERT(recon_reference,UNSIGNED INTEGER)) as recon_reference FROM t_reconciliation_result) as k"
@@ -61,7 +62,7 @@ class jdbcSparkMySql {
   		}
 	}
   
-  def writeToDatabase (spark : SparkSession, resultToDB: Dataset[Row]) : Unit = {
+  def writeToDatabase (spark : SparkSession, resultToDB: Dataset[Row], DBObj : DBdetails) : Unit = {
 
     try {
         val table_reconciled : String = "t_reconciliation_result"
@@ -76,7 +77,7 @@ class jdbcSparkMySql {
   	
   def fetchViewAndBaseData (spark : SparkSession, 
                             ruleDataRecord :ruleDataViewRecord,  
-                            viewColumnNames : HashMap[String, HashSet[ArrayBuffer[String]]]) : 
+                            viewColumnNames : HashMap[String, HashSet[ArrayBuffer[String]]], DBObj : DBdetails) : 
                             HashMap[String, Dataset[Row]] = {
     
       val reconUtilities =  new reconUtils()

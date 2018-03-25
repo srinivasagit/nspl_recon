@@ -6,7 +6,7 @@ import java.sql.{Connection,Statement,DriverManager}
 
 class jdbcScalaMysql {
 
-  def openMysqlConn() : Connection = { 
+  def openMysqlConn(DBObj : DBdetails) : Connection = { 
 
       val driver = "com.mysql.jdbc.Driver"
 	    val username = DBObj.dbUser
@@ -20,25 +20,29 @@ class jdbcScalaMysql {
   
   }
   
-	def fetchTenantId(connection: Connection) : Unit = {
+	def fetchTenantId(connection: Connection, DBObj : DBdetails) : Option[Long] = {
 			
 			try {	
 			      val queryFetchTenantId = "SELECT tenant_id FROM " +  DBObj.dbName + ".t_rule_group_details WHERE rule_group_id = " + DBObj.ruleGroupId + " LIMIT 1"
 			      val statement = connection.createStatement
 						val rs = statement.executeQuery(queryFetchTenantId)
+						var tenant : Long = 0L
 						
 						while (rs.next) {
 						     DBObj.setTenantId(rs.getLong("tenant_id"))
+						     tenant = rs.getLong("tenant_id")
 						}
 			      statement.close()
 			      rs.close()
+			      Some(tenant)
+			      
 			} catch {
-			      case e: Exception => e.printStackTrace()
+			      case e: Exception => e.printStackTrace(); None
 			} 
 	}
 	
 	
-	def checkTenantStatus(connection: Connection): Option[Boolean] = {
+	def checkTenantStatus(connection: Connection, DBObj : DBdetails): Option[Boolean] = {
 			try {	
 			      val result : Boolean = true
 						val queryCheckTenantId = "SELECT contract_num FROM " +  DBObj.dbName + 
@@ -46,12 +50,12 @@ class jdbcScalaMysql {
 						                         " AND modules = '" + DBObj.module + "' AND enabled_flag = true AND " + 
 						                         " (current_date() Between start_date AND (case when end_date is null then date_add(current_date(),INTERVAL 2 DAY) else end_date end))"
 						
-						val statement = connection.createStatement
+			      val statement = connection.createStatement
 						val rs = statement.executeQuery(queryCheckTenantId)
 						
 						while (rs.next) {
 						     DBObj.setContract_num (rs.getLong("contract_num"))
-						     print ("Tenant contract id: " + DBObj.contract_num )
+						     println ("Tenant contract id: " + DBObj.contract_num )
 						}
 			      statement.close()
 			      rs.close()
@@ -68,7 +72,7 @@ class jdbcScalaMysql {
 	  
 	}
 	
-	def retrieveRules(connection: Connection) : ArrayBuffer[ruleDataViewRecord] = {
+	def retrieveRules(connection: Connection, DBObj : DBdetails) : ArrayBuffer[ruleDataViewRecord] = {
 	  var rulesList = new ArrayBuffer[ruleDataViewRecord]()
 	  val queryRules = "SELECT id FROM " +  DBObj.dbName + 
 	                   ".t_rule_group WHERE id = " + DBObj.ruleGroupId + 
@@ -167,7 +171,7 @@ class jdbcScalaMysql {
 	         ruleRecord.sourceViewName_=(source_View_Name)
 	         ruleRecord.targetViewName_=(target_View_Name)
 	         ruleRecord.ruleName_=(rule_Code)
-	         ruleRecord.ruleConditions = retrieveRuleConditions(connection: Connection, ruleId : Long)
+	         ruleRecord.ruleConditions = retrieveRuleConditions(connection: Connection, ruleId : Long, DBObj : DBdetails)
 	         
 	         println(ruleRecord.toString())
 	         rulesList.append(ruleRecord) 
@@ -177,7 +181,7 @@ class jdbcScalaMysql {
 	  rulesList
 	}
 
-	def retrieveRuleConditions (connection : Connection, in_ruleId : Long) : ArrayBuffer[ruleConditionRecord] = {
+	def retrieveRuleConditions (connection : Connection, in_ruleId : Long, DBObj : DBdetails) : ArrayBuffer[ruleConditionRecord] = {
 
 	  var ruleConditions = new ArrayBuffer[ruleConditionRecord]()
 	  var stmt1 = connection.createStatement

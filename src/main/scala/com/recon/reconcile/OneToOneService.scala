@@ -5,6 +5,7 @@ import org.apache.spark.sql.{Dataset,Row}
 import scala.collection.mutable.{ArrayBuffer,HashMap}
 import java.text.SimpleDateFormat
 import org.apache.spark.sql.functions
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.expressions.Window
 
 class OneToOneService {
@@ -66,12 +67,15 @@ class OneToOneService {
                                ruleDataRecord :ruleDataViewRecord, ReconReference: Long) : ArrayBuffer[Dataset[Row]] = {
       
       var reconciled : Dataset[Row] = null
+      
       var reconIdsAndStatusArray : ArrayBuffer[Dataset[Row]] = new ArrayBuffer[Dataset[Row]]()
       
       reconciled = spark.sql(reconcileSQLs(0).toString());
       
-   		reconciled = reconciled
-   		             .withColumn("recon_reference", functions.row_number().over(Window.orderBy("original_row_id"))
+//   		reconciled = reconciled.withColumn("recon_reference",timeUUID()) 
+   		  
+      reconciled = reconciled
+                   .withColumn("recon_reference", functions.row_number().over(Window.orderBy("original_row_id"))
 						       .plus(ReconReference))
 						       
 		  reconciled.createOrReplaceTempView("treconciliationresult")

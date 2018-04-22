@@ -6,6 +6,8 @@ import scala.collection.mutable.ArrayBuffer
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.functions
 import org.apache.spark.sql.expressions.Window
+import org.apache.spark.sql.functions._
+//import com.datastax.driver.core.utils.UUIDs
 
 class ManyToOneService {
   
@@ -40,8 +42,12 @@ class ManyToOneService {
 		  reconciledManyToO.show()
 		   
 		  if (! reconciledManyToO.head(1).isEmpty) {	
+		    
+//		      val timeUUID = udf(() => UUIDs.timeBased().toString)
 		      val reconciledManyToOInterim : Dataset[Row] = reconciledManyToO.select("scrIds")
 		                                                         .withColumnRenamed("scrIds", "target_row_id")
+		                                                         
+//		      val reconciledTIdJoinWithRef = reconciledManyToOInterim.withColumn("recon_reference",timeUUID())
 
 		      val reconciledTIdJoinWithRef = reconciledManyToOInterim.withColumn("recon_reference", functions.row_number()
 									                                                                                 .over(Window.orderBy("target_row_id"))

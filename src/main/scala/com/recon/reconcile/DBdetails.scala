@@ -22,7 +22,7 @@ class DBdetails {
 		 private val _mySqlDriver = "com.mysql.jdbc.Driver"
 		 private var properties : Properties = _
 		 private val _module: String = "RECON"
-//		 private val _target_dbName : String = "guestrecon"
+		 private val _target_dbName : String = "guestrecon"
 
 		 def dbHost = _dbHost
 		 def dbName = _dbName

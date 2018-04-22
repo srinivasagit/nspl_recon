@@ -6,6 +6,8 @@ import scala.collection.mutable.ArrayBuffer
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.functions
 import org.apache.spark.sql.expressions.Window
+import org.apache.spark.sql.functions._
+//import com.datastax.driver.core.utils.UUIDs
 
 class ManyToManyService {
   
@@ -41,9 +43,11 @@ class ManyToManyService {
 
 	    if (! reconciledManyToM.head(1).isEmpty) {
 	      
+//	        val timeUUID = udf(() => UUIDs.timeBased().toString)
 	      	val reconciledIdJoinWithRef = reconciledManyToM.withColumn("recon_reference", functions.row_number()
 									                                                                               .over(Window.orderBy("tarRef"))
                                                                                   							 .plus(maxReconReference))
+//	        val reconciledIdJoinWithRef = reconciledManyToM.withColumn("recon_reference",timeUUID())
 	        val sColNames: Array[String] = filteredSourceDataSet.schema.fieldNames.filter(c => c != "SUMTOTAL_TEMP")
 	        val tColNames: Array[String] = filteredTargetDataSet.schema.fieldNames.filter(c => c != "SUMTOTAL_TEMP")
 	        

@@ -159,9 +159,9 @@ class jdbcScalaMysql {
 	         while (rs4.next()) {
 	           
 	           if (rs4.getLong("id") ==  source_View_Id ) {
-	             source_View_Name = rs4.getString("data_view_name")
+	             source_View_Name = "`" + rs4.getString("data_view_name") + "`"
 	           } else if (rs4.getLong("id") ==  target_View_Id ) {
-	             target_View_Name = rs4.getString("data_view_name")
+	             target_View_Name = "`" + rs4.getString("data_view_name") + "`"
 	           }
 	         }
 	         

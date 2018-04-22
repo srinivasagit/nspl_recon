@@ -9,6 +9,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.{HashMap,HashSet}
 import org.apache.spark.sql.{Dataset,Row}
 import java.math._;
+import org.apache.spark.sql.functions._
+//import com.datastax.driver.core.utils.UUIDs
 
 import java.sql.{Connection,Statement,DriverManager}
 
@@ -52,6 +54,9 @@ object dynamicReconcile {
     val jdbcMySql = new jdbcScalaMysql()
     val conn: Connection = jdbcMySql.openMysqlConn(DBObj : DBdetails)
     println("Mysql Connection created..") 
+    
+//    val timeUUID = udf(() => UUIDs.timeBased().toString)
+//    spark.sqlContext.udf.register("timeUUID", timeUUID)
     
     if ( DBObj.ruleGroupId != 0L ) {
       println("JDBC Connection to MySQL using Scala - start: %s".format(Calendar.getInstance().getTime()))

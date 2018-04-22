@@ -7,6 +7,8 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.functions
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.Column
+import org.apache.spark.sql.functions._
+//import com.datastax.driver.core.utils.UUIDs
 
 class OneToManyService {
   
@@ -42,13 +44,14 @@ class OneToManyService {
 		   reconciledJoinOneToM.show()
 		   
 		   if (! reconciledJoinOneToM.head(1).isEmpty) {
-		   		   
+//		   		val timeUUID = udf(() => UUIDs.timeBased().toString)   
 		      val reconciledSIdJoinInterim : Dataset[Row] = reconciledJoinOneToM.select("scrIds")
 		                                                         .withColumnRenamed("scrIds", "original_row_id")
 		   
 		      val reconciledSIdJoinWithRef = reconciledSIdJoinInterim.withColumn("recon_reference", functions.row_number()
 									                                                                                 .over(Window.orderBy("original_row_id"))
                                                                                   								 .plus(maxReconReference))
+//          val reconciledSIdJoinWithRef = reconciledSIdJoinInterim.withColumn("recon_reference",timeUUID())		                                                         
           val reconciledSIdJoinWithRefFinal = reconciledJoinOneToM.join(reconciledSIdJoinWithRef,
                                                                         reconciledJoinOneToM.col("scrIds")
                                                                         .equalTo(reconciledSIdJoinWithRef.col("original_row_id")))

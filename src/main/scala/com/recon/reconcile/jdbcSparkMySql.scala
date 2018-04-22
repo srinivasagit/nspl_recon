@@ -84,7 +84,7 @@ class jdbcSparkMySql {
       val viewWithBaseData : HashMap[String, Dataset[Row]] = HashMap.empty 
       
       val ruleID: Long = ruleDataRecord.ruleId
-      val sourceViewName : String =ruleDataRecord.sourceViewName
+      val sourceViewName : String = ruleDataRecord.sourceViewName
       val sourceViewID : Long = ruleDataRecord.sourceViewId
       val targetViewName : String = ruleDataRecord.targetViewName
       val targetViewID : Long = ruleDataRecord.targetViewId
@@ -111,68 +111,77 @@ class jdbcSparkMySql {
       var reconciledTIds : Dataset[Row] = null
       
       val table_reconciled : String = "t_reconciliation_result"
-      val predicate_s :String  = " t.original_view_id = " + sourceViewID
-      val predicate_t :String  = " t.target_view_id = " + targetViewID
+//      val predicate_s :String  = " t.original_view_id = " + sourceViewID
+//      val predicate_t :String  = " t.target_view_id = " + targetViewID;
       
-      val srcPushDownQuery = "( SELECT  s.* FROM " + sourceViewName.toLowerCase() + " AS s " +
-                                " WHERE s.scrIds NOT in (SELECT t.original_row_id as scrIds From "+ DBObj.target_dbName + ".t_reconciliation_result t WHERE " + 
-                                 predicate_s + " ) ) srcRecFilter"
+//      val srcPushDownQuery =  "( SELECT  s.* FROM `" + sourceViewName.toLowerCase() + "` AS s " +
+//                                " WHERE s.scrIds NOT in (SELECT t.original_row_id as scrIds From "+ DBObj.target_dbName + ".t_reconciliation_result t WHERE " + 
+//                                 predicate_s + " ) ) srcRecFilter"
+//                                
+//      val tarPushDownQuery = "( SELECT tar.* FROM `" + targetViewName.toLowerCase() + "` AS tar " +  
+//                                " WHERE tar.scrIds NOT in (SELECT t.target_row_id as scrIds From "+ DBObj.target_dbName + ".t_reconciliation_result t WHERE " + 
+//                                predicate_t + " ) ) tarRecFilter"
                                 
-      val tarPushDownQuery = "( SELECT tar.* FROM " + targetViewName.toLowerCase() + " AS tar " +  
-                                " WHERE tar.scrIds NOT in (SELECT t.target_row_id as scrIds From "+ DBObj.target_dbName + ".t_reconciliation_result t WHERE " + 
-                                predicate_t + " ) ) tarRecFilter"
-                                
-      println( "Source pushdown query :")
-      println (srcPushDownQuery)
-
-      println( "Target pushdown query :")
-      println (tarPushDownQuery)
       
-      val sourceViewDataFiltered =  spark.read.jdbc(DBObj.mySqlUrl, srcPushDownQuery , DBObj.buildProps())
-                                              .selectExpr(selectSourceSQL.map(r => r.toString): _*)
+//      println( "Source pushdown query :")
+//      println (srcPushDownQuery)
+//
+//      println( "Target pushdown query :")
+//      println (tarPushDownQuery)
+//      
+//      val sourceViewDataFiltered =  spark.read.jdbc(DBObj.mySqlUrl, srcPushDownQuery , DBObj.buildProps())
+//                                              .selectExpr(selectSourceSQL.map(r => r.toString): _*)
 //                                              .repartition(4)
+//      ---------------------------
+      val predicate_s :String  = " original_view_id = " + sourceViewID 
+      val predicate_t :String  = " target_view_id = " + targetViewID 
+
+      sourceViewData = spark.read.jdbc(DBObj.mySqlUrl, sourceViewName.toLowerCase(), DBObj.buildProps())
       
-//      sourceViewData = spark.read.jdbc(DBObj.mySqlUrl, sourceViewName.toLowerCase(), DBObj.buildProps())
-//      
-//      val sourceViewDataFinal = sourceViewData.selectExpr(selectSourceSQL.map(r => r.toString): _*)
-//      
-//      println ("stage-0 : Source record count : "   + sourceViewDataFinal.count())
-//      
-//      reconciledSIds = spark.read.jdbc(DBObj.mySqlUrl, table_reconciled.toLowerCase(), DBObj.buildProps())
-//                                 .where(predicate_s)
-//                                 .select("original_row_id")
-//                                 .withColumnRenamed("original_row_id", "scrIds")
-//      
-//      println ("stage-0 : Source record count @ table_reconciled : "   + reconciledSIds.count())
-//      
-//      val sourceViewDataFiltered = sourceViewDataFinal.join(reconciledSIds,Seq("scrIds"), "leftanti")     
-//    
+      println ("Debug : jdbc success")
+      val sourceViewDataFinal = sourceViewData.selectExpr(selectSourceSQL.map(r => r.toString): _*)
+      
+      println ("stage-0 : Source record count : "   + sourceViewDataFinal.count())
+      
+      reconciledSIds = spark.read.jdbc(DBObj.mySqlUrl, table_reconciled.toLowerCase(), DBObj.buildProps())
+                                 .where(predicate_s)
+                                 .select("original_row_id")
+                                 .withColumnRenamed("original_row_id", "scrIds")
+      
+      println ("stage-0 : Source record count @ table_reconciled : "   + reconciledSIds.count())
+      
+      val sourceViewDataFiltered = sourceViewDataFinal.join(reconciledSIds,Seq("scrIds"), "leftanti")     
+    
       println ("stage-0 : Source record count to be reconciled : "   + sourceViewDataFiltered.count() +
-               " - Partition count : " + sourceViewDataFiltered.rdd.partitions.size ) 
+               " - Partition count : " + sourceViewDataFiltered.rdd.partitions.size )
+
+//     --------------------------          
 //               " - data size : " + SizeEstimator.estimate(sourceViewDataFiltered))
 //      sourceViewDataFiltered.show()
-      
-      val targetViewDataFiltered =  spark.read.jdbc(DBObj.mySqlUrl, tarPushDownQuery , DBObj.buildProps())
-                                              .selectExpr(selectTargetSQL.map(r => r.toString): _*)
+//      
+//      val targetViewDataFiltered =  spark.read.jdbc(DBObj.mySqlUrl, tarPushDownQuery , DBObj.buildProps())
+//                                              .selectExpr(selectTargetSQL.map(r => r.toString): _*)
 //                                              .repartition(4)
                                               
-//      targetViewData = spark.read.jdbc(DBObj.mySqlUrl, targetViewName.toLowerCase(), DBObj.buildProps())
-//      
-//      val targetViewDataFinal = targetViewData.selectExpr(selectTargetSQL.map(r => r.toString): _*)
-//      
-//      println ("stage-0 : Target record count : "   + targetViewDataFinal.count())
-//      
-//      reconciledTIds = spark.read.jdbc(DBObj.mySqlUrl, table_reconciled.toLowerCase(), DBObj.buildProps())
-//                                 .where(predicate_t)
-//                                 .select("target_row_id")
-//                                 .withColumnRenamed("target_row_id", "scrIds")
-//      
-//      println ("stage-0 : Target record count @ table_reconciled : "   + reconciledTIds.count())
-//      
-//      val targetViewDataFiltered = targetViewDataFinal.join(reconciledTIds,Seq("scrIds"), "leftanti")     
+      targetViewData = spark.read.jdbc(DBObj.mySqlUrl, targetViewName.toLowerCase(), DBObj.buildProps())
+      
+      val targetViewDataFinal = targetViewData.selectExpr(selectTargetSQL.map(r => r.toString): _*)
+      
+      println ("stage-0 : Target record count : "   + targetViewDataFinal.count())
+      
+      reconciledTIds = spark.read.jdbc(DBObj.mySqlUrl, table_reconciled.toLowerCase(), DBObj.buildProps())
+                                 .where(predicate_t)
+                                 .select("target_row_id")
+                                 .withColumnRenamed("target_row_id", "scrIds")
+      
+      println ("stage-0 : Target record count @ table_reconciled : "   + reconciledTIds.count())
+      
+      val targetViewDataFiltered = targetViewDataFinal.join(reconciledTIds,Seq("scrIds"), "leftanti")     
       
       println ("stage-0 : Target record count to be reconciled : " + targetViewDataFiltered.count() +
-               " - Partition count : " + targetViewDataFiltered.rdd.partitions.size ) 
+               " - Partition count : " + targetViewDataFiltered.rdd.partitions.size )
+               
+//      ------------------------------------               
 //               " - data size : " + SizeEstimator.estimate(sourceViewDataFiltered))      
 //      targetViewDataFiltered.show()
       

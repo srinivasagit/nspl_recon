@@ -14,7 +14,7 @@ class DBdetails {
 		 private var _accAppRuleId: Int = _
 		 private var _ruleType : String = null
 		 private var _userId: String = null
-	   private var _oozieJobId : Long = _
+	   private var _oozieJobId : String = null
 		 private var _tenantId: Long = _
 		 private var _contract_num : Long = _
 //			println ("contract Initiavalue : " + contract_num)
@@ -44,17 +44,26 @@ class DBdetails {
 		 
 		 def utils(arguments : Array [String]):Unit = {
 	     
-					this._dbHost = arguments(0) 
+					this._dbHost = arguments(0) + ":3306"
 					this._dbName  = arguments(1)
 					this._dbUser = arguments(2)
 					this._dbPass = arguments(3)
 					this._ruleGroupId = arguments(4).toInt
-					this._ruleId = arguments(5).toInt
-					this._accRuleGroupId = arguments(6).toInt
-					this._accAppRuleId = arguments(7).toInt
-					this._ruleType = arguments(8)
+					if (! arguments(5).equals("null")) {
+					  this._ruleId = arguments(5).toInt
+					}
+					if (! arguments(6).equals("null")) {
+					  this._accRuleGroupId = arguments(6).toInt
+					}					
+					if (! arguments(7).equals("null")) {
+					  this._accAppRuleId = arguments(7).toInt
+					}						
+					if (! arguments(8).equals("null")) {
+					  this._ruleType = arguments(8)
+					}											
+					
 					this._userId = arguments(9)
-					this._oozieJobId = arguments(10).toLong
+					this._oozieJobId = arguments(10)
 					this._mySqlUrl= "jdbc:mysql://" + this.dbHost + '/' + this.dbName
 					
 					println ("Host     			: %s".format(dbHost))
@@ -62,12 +71,12 @@ class DBdetails {
 					println ("DB User  			: %s".format(dbUser))
 					println ("Password 			: %s".format(dbPass))
 					println ("Rule GroupId	: %d".format(ruleGroupId))
-					println ("Rule Id				: %d".format(ruleId))
-					println ("Account Rule GroupId: %d".format(accRuleGroupId))
-					println ("Account Rule Id			: %d".format(accAppRuleId))
+					println ("Rule Id				: " + ruleId)
+					println ("Account Rule GroupId: " + accRuleGroupId)
+					println ("Account Rule Id			: " + accAppRuleId)
 					println ("Rule Type			: %s".format(ruleType))
 					println ("User					: %s".format(userId))
-					println ("oozieJobId		: %d".format(oozieJobId))
+					println ("oozieJobId		: " + oozieJobId)
 					println ("MySql url 		: %s".format(mySqlUrl))
       }
 	    
